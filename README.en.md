@@ -1,7 +1,7 @@
 # 🔄 Gravity Reversal Connect Four
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![中文](https://img.shields.io/badge/中文-README-blue)](README.md)
+[![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
+[MIT License](LICENSE) | [中文 README](README.md)
 
 A unique variant of Connect Four where gravity direction reverses every few turns, causing pieces to redistribute!
 

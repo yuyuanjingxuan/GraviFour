@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>重力反转四子棋</title>
+    <title>重力反转四子棋 - Gravity Reversal Connect Four</title>
     <style>
         * {
             margin: 0;
@@ -22,11 +22,60 @@
             padding: 20px;
         }
 
+        .logo-container {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 50%, #667eea 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+            50% { transform: scale(1.1); box-shadow: 0 12px 30px rgba(0,0,0,0.4); }
+        }
+
+        .logo-icon {
+            font-size: 50px;
+        }
+
         h1 {
             color: white;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
             margin-bottom: 10px;
             font-size: 2.5rem;
+            text-align: center;
+        }
+
+        .lang-selector {
+            margin-bottom: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            padding: 6px 12px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .lang-btn.active {
+            background: white;
+            color: #667eea;
         }
 
         .info-panel {
@@ -43,6 +92,7 @@
             border-radius: 20px;
             margin-top: 5px;
             font-weight: bold;
+            transition: all 0.5s ease;
         }
 
         .gravity-indicator .arrow {
@@ -112,8 +162,10 @@
         .controls {
             margin-top: 20px;
             display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             align-items: center;
+            justify-content: center;
         }
 
         .player-turn {
@@ -157,6 +209,15 @@
             transform: translateY(0);
         }
 
+        .btn-mode {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-mode.active {
+            background: #f39c12;
+        }
+
         .message {
             margin-top: 15px;
             color: white;
@@ -164,6 +225,7 @@
             font-weight: bold;
             min-height: 30px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            text-align: center;
         }
 
         .win-player1 { color: #ff6b6b; }
@@ -175,8 +237,50 @@
             color: rgba(255,255,255,0.8);
             font-size: 0.9rem;
             text-align: center;
-            max-width: 500px;
+            max-width: 600px;
             line-height: 1.6;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .mode-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .diff-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .diff-btn.active {
+            background: #f39c12;
+            border-color: #f39c12;
         }
 
         @media (max-width: 600px) {
@@ -190,12 +294,23 @@
     </style>
 </head>
 <body>
-    <h1>🔄 重力反转四子棋</h1>
-    
+    <div class="logo-container">
+        <div class="logo">
+            <div class="logo-icon">🔄</div>
+        </div>
+    </div>
+
+    <h1 id="gameTitle">重力反转四子棋</h1>
+
+    <div class="lang-selector">
+        <button class="lang-btn active" onclick="game.setLanguage('zh')">中文</button>
+        <button class="lang-btn" onclick="game.setLanguage('en')">English</button>
+    </div>
+
     <div class="info-panel">
-        <div>当前回合: <span id="turnCount">0</span></div>
+        <div><span id="turnLabel">当前回合</span>: <span id="turnCount">0</span></div>
         <div class="gravity-indicator">
-            重力方向: <span id="gravityDir">向下</span> <span class="arrow" id="gravityArrow">⬇️</span>
+            <span id="gravityLabel">重力方向</span>: <span id="gravityDir">向下</span> <span class="arrow" id="gravityArrow">⬇️</span>
         </div>
     </div>
 
@@ -204,21 +319,334 @@
     </div>
 
     <div class="controls">
-        <div class="player-turn" id="playerTurn">
-            <span></span>玩家 1 回合
+        <div class="mode-selector">
+            <button class="mode-btn active" id="modePVP" onclick="game.setMode('pvp')">PVP</button>
+            <button class="mode-btn" id="modePVE" onclick="game.setMode('pve')">PVE</button>
         </div>
-        <button class="btn-restart" onclick="game.restart()">重新开始</button>
+
+        <div class="difficulty-selector" id="difficultyContainer" style="display: none;">
+            <button class="diff-btn active" onclick="game.setDifficulty('easy')">简单</button>
+            <button class="diff-btn" onclick="game.setDifficulty('medium')">中等</button>
+            <button class="diff-btn" onclick="game.setDifficulty('hard')">困难</button>
+            <button class="diff-btn" onclick="game.setDifficulty('expert')">专家</button>
+        </div>
+
+        <div class="player-turn" id="playerTurn">
+            <span></span><span id="playerLabel">玩家 1 回合</span>
+        </div>
+        <button class="btn-restart" onclick="game.restart()"><span id="restartLabel">重新开始</span></button>
     </div>
 
     <div class="message" id="message"></div>
 
     <div class="rules">
-        <p>🎯 <strong>游戏规则：</strong>在 columns 中点击投放棋子，棋子受重力影响自动下落。</p>
-        <p>🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转！棋子会重新分布。</p>
-        <p>投放口总在重力的反方向（重力向下时从顶部投放，重力向上时从底部投放）。</p>
+        <p id="rule1">🎯 <strong>游戏规则：</strong>在 columns 中点击投放棋子，棋子受重力影响自动下落。</p>
+        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转！棋子会重新分布。</p>
+        <p id="rule3">投放口总在重力的反方向（重力向下时从顶部投放，重力向上时从底部投放）。</p>
     </div>
 
     <script>
+        // 音频系统 - 使用 Web Audio API
+        class AudioSystem {
+            constructor() {
+                this.ctx = null;
+                this.bgmOscillators = [];
+                this.bgmGain = null;
+                this.isPlayingBGM = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playTone(freq, type, duration, volume = 0.3) {
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playStart() {
+                this.playTone(440, 'sine', 0.3);
+                setTimeout(() => this.playTone(554, 'sine', 0.3), 150);
+                setTimeout(() => this.playTone(659, 'sine', 0.6), 300);
+            }
+
+            playDrop() {
+                this.playTone(300, 'triangle', 0.15, 0.2);
+                setTimeout(() => this.playTone(200, 'sine', 0.1, 0.2), 50);
+            }
+
+            playGravityChange() {
+                this.playTone(220, 'sawtooth', 0.4, 0.25);
+                setTimeout(() => this.playTone(330, 'sawtooth', 0.4, 0.25), 100);
+                setTimeout(() => this.playTone(440, 'sawtooth', 0.6, 0.25), 200);
+            }
+
+            playWin() {
+                this.playTone(523, 'square', 0.2);
+                setTimeout(() => this.playTone(659, 'square', 0.2), 150);
+                setTimeout(() => this.playTone(784, 'square', 0.2), 300);
+                setTimeout(() => this.playTone(1046, 'square', 0.8), 450);
+            }
+
+            playLose() {
+                this.playTone(300, 'sawtooth', 0.3);
+                setTimeout(() => this.playTone(250, 'sawtooth', 0.3), 200);
+                setTimeout(() => this.playTone(200, 'sawtooth', 0.6), 400);
+            }
+
+            playDraw() {
+                this.playTone(400, 'sine', 0.2);
+                setTimeout(() => this.playTone(400, 'sine', 0.2), 200);
+                setTimeout(() => this.playTone(400, 'sine', 0.4), 400);
+            }
+
+            startBGM() {
+                if (this.isPlayingBGM || !this.ctx) return;
+                this.isPlayingBGM = true;
+                this.playBGMSequence();
+            }
+
+            stopBGM() {
+                this.isPlayingBGM = false;
+                this.bgmOscillators.forEach(osc => {
+                    try { osc.stop(); } catch(e) {}
+                });
+                this.bgmOscillators = [];
+            }
+
+            playBGMSequence() {
+                if (!this.isPlayingBGM) return;
+
+                const notes = [
+                    { freq: 261.63, duration: 0.5 }, // C4
+                    { freq: 293.66, duration: 0.5 }, // D4
+                    { freq: 329.63, duration: 0.5 }, // E4
+                    { freq: 349.23, duration: 0.5 }, // F4
+                    { freq: 392.00, duration: 0.5 }, // G4
+                    { freq: 440.00, duration: 0.5 }, // A4
+                    { freq: 493.88, duration: 0.5 }, // B4
+                    { freq: 523.25, duration: 0.5 }, // C5
+                    { freq: 493.88, duration: 0.5 }, // B4
+                    { freq: 440.00, duration: 0.5 }, // A4
+                    { freq: 392.00, duration: 0.5 }, // G4
+                    { freq: 349.23, duration: 0.5 }, // F4
+                    { freq: 329.63, duration: 0.5 }, // E4
+                    { freq: 293.66, duration: 0.5 }, // D4
+                ];
+
+                let time = this.ctx.currentTime;
+                let delay = 0;
+
+                notes.forEach((note, index) => {
+                    setTimeout(() => {
+                        if (this.isPlayingBGM) {
+                            this.playTone(note.freq, 'triangle', note.duration, 0.15);
+                        }
+                    }, delay * 1000);
+                    delay += note.duration;
+                });
+
+                // 16拍后循环
+                setTimeout(() => {
+                    if (this.isPlayingBGM) {
+                        this.playBGMSequence();
+                    }
+                }, delay * 1000);
+            }
+        }
+
+        // AI 系统
+        class AI {
+            constructor(difficulty = 'medium') {
+                this.difficulty = difficulty;
+                this.weights = {
+                    win: 10000,
+                    blockWin: 5000,
+                    three: 1000,
+                    blockThree: 800,
+                    two: 100,
+                    center: 50
+                };
+            }
+
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+            }
+
+            getBestMove(board, player) {
+                const opponent = player === 1 ? 2 : 1;
+                const cols = board[0].length;
+                const rows = board.length;
+                
+                let bestScore = -Infinity;
+                let bestMoves = [];
+
+                // 根据难度调整搜索深度
+                const depth = this.getDepth();
+
+                for (let col = 0; col < cols; col++) {
+                    const row = this.getAvailableRow(board, col);
+                    if (row === -1) continue;
+
+                    // 评估这个位置
+                    let score = this.evaluateMove(board, row, col, player, opponent, depth);
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMoves = [col];
+                    } else if (score === bestScore) {
+                        bestMoves.push(col);
+                    }
+                }
+
+                // 添加一些随机性
+                if (this.difficulty === 'easy' && Math.random() < 0.3) {
+                    const validCols = this.getValidColumns(board);
+                    if (validCols.length > 0) {
+                        return validCols[Math.floor(Math.random() * validCols.length)];
+                    }
+                }
+
+                return bestMoves.length > 0 ? 
+                    bestMoves[Math.floor(Math.random() * bestMoves.length)] : 
+                    Math.floor(cols / 2);
+            }
+
+            getDepth() {
+                switch (this.difficulty) {
+                    case 'easy': return 2;
+                    case 'medium': return 3;
+                    case 'hard': return 4;
+                    case 'expert': return 5;
+                    default: return 3;
+                }
+            }
+
+            getAvailableRow(board, col) {
+                for (let r = board.length - 1; r >= 0; r--) {
+                    if (board[r][col] === 0) return r;
+                }
+                return -1;
+            }
+
+            evaluateMove(board, row, col, player, opponent, depth) {
+                let score = 0;
+
+                // 中心位置偏好
+                const centerCol = Math.floor(board[0].length / 2);
+                score += Math.abs(col - centerCol) < 2 ? this.weights.center : 0;
+
+                // 模拟落子
+                board[row][col] = player;
+
+                // 检查是否获胜
+                if (this.checkWin(board, row, col, player)) {
+                    score += this.weights.win;
+                } else {
+                    // 检查是否需要阻挡对手
+                    board[row][col] = opponent;
+                    if (this.checkWin(board, row, col, opponent)) {
+                        score += this.weights.blockWin;
+                    }
+                    board[row][col] = 0;
+
+                    // 评估连子情况
+                    score += this.evaluateLines(board, row, col, player);
+                    score -= this.evaluateLines(board, row, col, opponent) * 0.8;
+                }
+
+                // 反向模拟
+                board[row][col] = 0;
+
+                return score;
+            }
+
+            evaluateLines(board, row, col, player) {
+                let score = 0;
+                const directions = [
+                    [[0, 1], [0, -1]],  // 水平
+                    [[1, 0], [-1, 0]],  // 垂直
+                    [[1, 1], [-1, -1]], // 对角线
+                    [[1, -1], [-1, 1]]  // 反对角线
+                ];
+
+                for (const direction of directions) {
+                    let count = 1;
+                    let emptyEnds = 0;
+
+                    for (const [dr, dc] of direction) {
+                        let r = row + dr;
+                        let c = col + dc;
+                        while (r >= 0 && r < board.length && c >= 0 && c < board[0].length && board[r][c] === player) {
+                            count++;
+                            r += dr;
+                            c += dc;
+                        }
+                        if (r >= 0 && r < board.length && c >= 0 && c < board[0].length && board[r][c] === 0) {
+                            emptyEnds++;
+                        }
+                    }
+
+                    if (count >= 4) score += this.weights.win;
+                    else if (count === 3 && emptyEnds > 0) score += this.weights.three;
+                    else if (count === 2 && emptyEnds > 0) score += this.weights.two;
+                }
+
+                return score;
+            }
+
+            checkWin(board, row, col, player) {
+                const directions = [
+                    [[0, 1], [0, -1]],  // 水平
+                    [[1, 0], [-1, 0]],  // 垂直
+                    [[1, 1], [-1, -1]], // 对角线
+                    [[1, -1], [-1, 1]]  // 反对角线
+                ];
+
+                for (const direction of directions) {
+                    let count = 1;
+                    for (const [dr, dc] of direction) {
+                        let r = row + dr;
+                        let c = col + dc;
+                        while (r >= 0 && r < board.length && c >= 0 && c < board[0].length && board[r][c] === player) {
+                            count++;
+                            r += dr;
+                            c += dc;
+                        }
+                    }
+                    if (count >= 4) return true;
+                }
+                return false;
+            }
+
+            getValidColumns(board) {
+                const cols = board[0].length;
+                const valid = [];
+                for (let c = 0; c < cols; c++) {
+                    if (this.getAvailableRow(board, c) !== -1) {
+                        valid.push(c);
+                    }
+                }
+                return valid;
+            }
+        }
+
+        // 游戏主类
         class GraviFourGame {
             constructor() {
                 this.rows = 6;
@@ -227,9 +655,13 @@
                 this.board = [];
                 this.currentPlayer = 1;
                 this.turnCount = 0;
-                this.gravityDown = true;
+                this.gravityDirection = 'down'; // down, up, left, right
                 this.gameOver = false;
                 this.lastMove = null;
+                this.mode = 'pvp'; // pvp, pve
+                this.difficulty = 'medium';
+                this.language = 'zh';
+                this.audio = new AudioSystem();
                 
                 this.boardElement = document.getElementById('board');
                 this.messageElement = document.getElementById('message');
@@ -237,13 +669,126 @@
                 this.playerTurnElement = document.getElementById('playerTurn');
                 this.gravityDirElement = document.getElementById('gravityDir');
                 this.gravityArrowElement = document.getElementById('gravityArrow');
-                
+                this.ai = new AI(this.difficulty);
+
+                this.texts = {
+                    zh: {
+                        title: '重力反转四子棋',
+                        turn: '当前回合',
+                        gravity: '重力方向',
+                        gravityDown: '向下',
+                        gravityUp: '向上',
+                        gravityLeft: '向左',
+                        gravityRight: '向右',
+                        player: '玩家',
+                        restart: '重新开始',
+                        rule1: '🎯 <strong>游戏规则：</strong>在 columns 中点击投放棋子，棋子受重力影响自动下落。',
+                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转！棋子会重新分布。',
+                        rule3: '投放口总在重力的反方向（重力向下时从顶部投放，重力向上时从底部投放）。',
+                        pvp: 'PVP',
+                        pve: 'PVE',
+                        difficulty: '难度',
+                        easy: '简单',
+                        medium: '中等',
+                        hard: '困难',
+                        expert: '专家',
+                        player1Turn: '玩家 1 回合',
+                        player2Turn: '玩家 2 回合',
+                        aiTurn: '电脑回合',
+                        win1: '玩家 1 获胜！🎉',
+                        win2: '玩家 2 获胜！🎉',
+                        winAI: '电脑获胜！🤖',
+                        draw: '平局！🤝',
+                        gravityChanged: '重力方向反转！🔄'
+                    },
+                    en: {
+                        title: 'Gravity Reversal Connect Four',
+                        turn: 'Turn',
+                        gravity: 'Gravity',
+                        gravityDown: 'Down',
+                        gravityUp: 'Up',
+                        gravityLeft: 'Left',
+                        gravityRight: 'Right',
+                        player: 'Player',
+                        restart: 'Restart',
+                        rule1: '🎯 <strong>Rules:</strong> Click on columns to drop pieces. Pieces fall due to gravity.',
+                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> turns, gravity reverses! Pieces redistribute.',
+                        rule3: 'Drop口 is always opposite to gravity direction.',
+                        pvp: 'PVP',
+                        pve: 'PVE',
+                        difficulty: 'Difficulty',
+                        easy: 'Easy',
+                        medium: 'Medium',
+                        hard: 'Hard',
+                        expert: 'Expert',
+                        player1Turn: 'Player 1 Turn',
+                        player2Turn: 'Player 2 Turn',
+                        aiTurn: 'AI Turn',
+                        win1: 'Player 1 Wins! 🎉',
+                        win2: 'Player 2 Wins! 🎉',
+                        winAI: 'AI Wins! 🤖',
+                        draw: 'Draw! 🤝',
+                        gravityChanged: 'Gravity Reversed! 🔄'
+                    }
+                };
+
                 this.init();
             }
 
             init() {
                 this.createBoard();
                 this.updateUI();
+                this.audio.startBGM();
+            }
+
+            setLanguage(lang) {
+                this.language = lang;
+                document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.lang-btn[onclick="game.setLanguage('${lang}')"]`).classList.add('active');
+                this.updateTexts();
+            }
+
+            updateTexts() {
+                const t = this.texts[this.language];
+                document.getElementById('gameTitle').textContent = t.title;
+                document.getElementById('turnLabel').textContent = t.turn;
+                document.getElementById('restartLabel').textContent = t.restart;
+                document.getElementById('rule1').innerHTML = t.rule1;
+                document.getElementById('rule2').innerHTML = t.rule2;
+                document.getElementById('rule3').textContent = t.rule3;
+                document.getElementById('modePVP').textContent = t.pvp;
+                document.getElementById('modePVE').textContent = t.pve;
+                document.getElementById('difficultyContainer').querySelectorAll('.diff-btn')[0].textContent = t.easy;
+                document.getElementById('difficultyContainer').querySelectorAll('.diff-btn')[1].textContent = t.medium;
+                document.getElementById('difficultyContainer').querySelectorAll('.diff-btn')[2].textContent = t.hard;
+                document.getElementById('difficultyContainer').querySelectorAll('.diff-btn')[3].textContent = t.expert;
+                
+                if (!this.gameOver) {
+                    this.updatePlayerTurnText();
+                }
+            }
+
+            setMode(mode) {
+                this.mode = mode;
+                document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`mode${mode.toUpperCase()}`).classList.add('active');
+                
+                const diffContainer = document.getElementById('difficultyContainer');
+                if (mode === 'pve') {
+                    diffContainer.style.display = 'flex';
+                } else {
+                    diffContainer.style.display = 'none';
+                }
+                
+                this.restart();
+            }
+
+            setDifficulty(difficulty) {
+                this.difficulty = difficulty;
+                this.ai.setDifficulty(difficulty);
+                document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+                this.restart();
             }
 
             createBoard() {
@@ -264,16 +809,21 @@
 
             handleCellClick(col) {
                 if (this.gameOver) return;
+                if (this.mode === 'pve' && this.currentPlayer === 2) return;
 
                 let targetRow;
-                if (this.gravityDown) {
-                    // 重力向下：从顶部投放，找最下方空位
+                if (this.gravityDirection === 'down') {
                     targetRow = this.findBottomEmptyRow(col);
-                    if (targetRow === -1) return; // 列已满
-                } else {
-                    // 重力向上：从底部投放，找最上方空位
+                    if (targetRow === -1) return;
+                } else if (this.gravityDirection === 'up') {
                     targetRow = this.findTopEmptyRow(col);
-                    if (targetRow === -1) return; // 列已满
+                    if (targetRow === -1) return;
+                } else if (this.gravityDirection === 'left') {
+                    targetRow = this.findLeftEmptyRow(col);
+                    if (targetRow === -1) return;
+                } else if (this.gravityDirection === 'right') {
+                    targetRow = this.findRightEmptyRow(col);
+                    if (targetRow === -1) return;
                 }
 
                 this.placePiece(targetRow, col);
@@ -293,70 +843,136 @@
                 return -1;
             }
 
+            findLeftEmptyRow(row) {
+                for (let c = this.cols - 1; c >= 0; c--) {
+                    if (this.board[row][c] === 0) return c;
+                }
+                return -1;
+            }
+
+            findRightEmptyRow(row) {
+                for (let c = 0; c < this.cols; c++) {
+                    if (this.board[row][c] === 0) return c;
+                }
+                return -1;
+            }
+
             placePiece(row, col) {
                 this.board[row][col] = this.currentPlayer;
                 this.lastMove = { row, col };
                 this.updateCell(row, col);
+                this.audio.playDrop();
 
                 if (this.checkWin(row, col)) {
                     this.gameOver = true;
-                    this.showMessage(`玩家 ${this.currentPlayer} 获胜！🎉`, 'win-player' + this.currentPlayer);
+                    this.audio.stopBGM();
+                    this.audio.playWin();
+                    this.showMessage(this.getWinMessage(), 'win-player' + this.currentPlayer);
                     return;
                 }
 
                 if (this.checkDraw()) {
                     this.gameOver = true;
-                    this.showMessage("平局！🤝", 'draw');
+                    this.audio.stopBGM();
+                    this.audio.playDraw();
+                    this.showMessage(this.getText('draw'), 'draw');
                     return;
                 }
 
                 this.turnCount++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
 
-                // 检查是否需要反转重力
                 if (this.turnCount % this.gravityChangeInterval === 0) {
                     this.toggleGravity();
                 }
 
                 this.updateUI();
+
+                // AI 回合
+                if (this.mode === 'pve' && this.currentPlayer === 2 && !this.gameOver) {
+                    setTimeout(() => this.aiMove(), 500);
+                }
+            }
+
+            aiMove() {
+                const col = this.ai.getBestMove(this.board, 2);
+                
+                let targetRow;
+                if (this.gravityDirection === 'down') {
+                    targetRow = this.findBottomEmptyRow(col);
+                } else if (this.gravityDirection === 'up') {
+                    targetRow = this.findTopEmptyRow(col);
+                } else if (this.gravityDirection === 'left') {
+                    targetRow = this.findLeftEmptyRow(col);
+                } else if (this.gravityDirection === 'right') {
+                    targetRow = this.findRightEmptyRow(col);
+                }
+
+                if (targetRow !== -1) {
+                    this.placePiece(targetRow, col);
+                }
             }
 
             toggleGravity() {
-                this.gravityDown = !this.gravityDown;
-                this.showMessage(`重力方向反转！🔄`, '');
+                const directions = ['down', 'up', 'left', 'right'];
+                const currentIndex = directions.indexOf(this.gravityDirection);
+                const nextIndex = (currentIndex + 1) % 4;
+                this.gravityDirection = directions[nextIndex];
                 
-                // 重新分布棋子
+                this.audio.playGravityChange();
+                this.showMessage(this.getText('gravityChanged'), '');
+                
                 this.rearrangePieces();
                 
-                // 重置回合计数器（可选，这里保留原计数）
-                // this.turnCount = 0;
+                // 重置回合计数器
+                this.turnCount = 0;
             }
 
             rearrangePieces() {
                 const newBoard = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
                 
-                for (let c = 0; c < this.cols; c++) {
-                    const pieces = [];
-                    
-                    // 收集该列所有棋子
-                    for (let r = 0; r < this.rows; r++) {
-                        if (this.board[r][c] !== 0) {
-                            pieces.push(this.board[r][c]);
+                if (this.gravityDirection === 'down' || this.gravityDirection === 'up') {
+                    // 垂直重力
+                    for (let c = 0; c < this.cols; c++) {
+                        const pieces = [];
+                        for (let r = 0; r < this.rows; r++) {
+                            if (this.board[r][c] !== 0) {
+                                pieces.push(this.board[r][c]);
+                            }
+                        }
+                        
+                        if (this.gravityDirection === 'down') {
+                            let newRow = this.rows - pieces.length;
+                            for (let piece of pieces) {
+                                newBoard[newRow++][c] = piece;
+                            }
+                        } else {
+                            let newRow = 0;
+                            for (let piece of pieces) {
+                                newBoard[newRow++][c] = piece;
+                            }
                         }
                     }
-                    
-                    // 根据重力方向重新放置
-                    if (this.gravityDown) {
-                        // 重力向下：棋子靠底部
-                        let newRow = this.rows - pieces.length;
-                        for (let piece of pieces) {
-                            newBoard[newRow++][c] = piece;
+                } else {
+                    // 水平重力
+                    for (let r = 0; r < this.rows; r++) {
+                        const pieces = [];
+                        for (let c = 0; c < this.cols; c++) {
+                            if (this.board[r][c] !== 0) {
+                                pieces.push(this.board[r][c]);
+                            }
                         }
-                    } else {
-                        // 重力向上：棋子靠顶部
-                        let newRow = 0;
-                        for (let piece of pieces) {
-                            newBoard[newRow++][c] = piece;
+                        
+                        if (this.gravityDirection === 'left') {
+                            let newCol = this.cols - pieces.length;
+                            for (let piece of pieces) {
+                                newBoard[r][newCol++] = piece;
+                            }
+                        } else {
+                            let newCol = 0;
+                            for (let piece of pieces) {
+                                newBoard[r][newCol++] = piece;
+                            }
                         }
                     }
                 }
@@ -367,33 +983,26 @@
 
             checkWin(row, col) {
                 const player = this.board[row][col];
-                
-                // 四个方向：水平、垂直、对角线、反对角线
                 const directions = [
-                    [[0, 1], [0, -1]],  // 水平
-                    [[1, 0], [-1, 0]],  // 垂直
-                    [[1, 1], [-1, -1]], // 对角线
-                    [[1, -1], [-1, 1]]  // 反对角线
+                    [[0, 1], [0, -1]],
+                    [[1, 0], [-1, 0]],
+                    [[1, 1], [-1, -1]],
+                    [[1, -1], [-1, 1]]
                 ];
 
                 for (const direction of directions) {
                     let count = 1;
-                    
                     for (const [dr, dc] of direction) {
                         let r = row + dr;
                         let c = col + dc;
-                        
-                        while (r >= 0 && r < this.rows && c >= 0 && c < this.cols && 
-                               this.board[r][c] === player) {
+                        while (r >= 0 && r < this.rows && c >= 0 && c < this.cols && this.board[r][c] === player) {
                             count++;
                             r += dr;
                             c += dc;
                         }
                     }
-                    
                     if (count >= 4) return true;
                 }
-                
                 return false;
             }
 
@@ -406,10 +1015,8 @@
                 const cell = this.boardElement.children[index];
                 cell.className = `cell player${this.board[row][col]}`;
                 
-                // 移除之前的 last-move 标记
                 document.querySelectorAll('.last-move').forEach(c => c.classList.remove('last-move'));
                 
-                // 添加新的 last-move 标记
                 if (this.lastMove) {
                     const lastIndex = this.lastMove.row * this.cols + this.lastMove.col;
                     this.boardElement.children[lastIndex].classList.add('last-move');
@@ -426,11 +1033,39 @@
 
             updateUI() {
                 this.turnCountElement.textContent = this.turnCount;
-                this.gravityDirElement.textContent = this.gravityDown ? '向下' : '向上';
-                this.gravityArrowElement.textContent = this.gravityDown ? '⬇️' : '⬆️';
+                
+                const t = this.texts[this.language];
+                this.gravityDirElement.textContent = t[`gravity${this.gravityDirection.charAt(0).toUpperCase() + this.gravityDirection.slice(1)}`];
+                
+                const arrows = { down: '⬇️', up: '⬆️', left: '⬅️', right: '➡️' };
+                this.gravityArrowElement.textContent = arrows[this.gravityDirection];
+                
+                this.updatePlayerTurnText();
+            }
+
+            updatePlayerTurnText() {
+                const t = this.texts[this.language];
+                let text;
+                if (this.mode === 'pve' && this.currentPlayer === 2) {
+                    text = t.aiTurn;
+                } else {
+                    text = this.currentPlayer === 1 ? t.player1Turn : t.player2Turn;
+                }
+                this.playerTurnElement.innerHTML = `<span></span>${text}`;
                 
                 this.playerTurnElement.className = `player-turn player${this.currentPlayer}-turn`;
-                this.playerTurnElement.innerHTML = `<span></span>玩家 ${this.currentPlayer} 回合`;
+            }
+
+            getWinMessage() {
+                const t = this.texts[this.language];
+                if (this.mode === 'pve' && this.currentPlayer === 2) {
+                    return t.winAI;
+                }
+                return this.currentPlayer === 1 ? t.win1 : t.win2;
+            }
+
+            getText(key) {
+                return this.texts[this.language][key];
             }
 
             showMessage(text, className) {
@@ -442,13 +1077,17 @@
                 this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
                 this.currentPlayer = 1;
                 this.turnCount = 0;
-                this.gravityDown = true;
+                this.gravityDirection = 'down';
                 this.gameOver = false;
                 this.lastMove = null;
                 
                 this.renderBoard();
                 this.showMessage('', '');
                 this.updateUI();
+                
+                this.audio.stopBGM();
+                this.audio.playStart();
+                this.audio.startBGM();
             }
         }
 

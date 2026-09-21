@@ -1,0 +1,37 @@
+name: CI Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate HTML
+        uses: cybervoid/html-validator-action@v1
+        with:
+          files: 'index.html'
+
+      - name: Check file structure
+        run: |
+          echo "Checking required files..."
+          test -f index.html || { echo "index.html not found"; exit 1; }
+          test -f README.md || { echo "README.md not found"; exit 1; }
+          test -f README.en.md || { echo "README.en.md not found"; exit 1; }
+          test -f LICENSE || { echo "LICENSE not found"; exit 1; }
+          echo "All required files present!"
+
+      - name: Check file sizes
+        run: |
+          echo "Checking file sizes..."
+          size=$(stat -c%s index.html 2>/dev/null || stat -f%z index.html)
+          echo "index.html size: $size bytes"
+          if [ "$size" -gt 500000 ]; then
+            echo "Warning: index.html is larger than 500KB"
+          fi
