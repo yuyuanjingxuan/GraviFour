@@ -449,24 +449,47 @@
             playBGMSequence() {
                 if (!this.isPlayingBGM) return;
 
-                const notes = [
-                    { freq: 261.63, duration: 0.5 }, // C4
-                    { freq: 293.66, duration: 0.5 }, // D4
-                    { freq: 329.63, duration: 0.5 }, // E4
-                    { freq: 349.23, duration: 0.5 }, // F4
-                    { freq: 392.00, duration: 0.5 }, // G4
-                    { freq: 440.00, duration: 0.5 }, // A4
-                    { freq: 493.88, duration: 0.5 }, // B4
-                    { freq: 523.25, duration: 0.5 }, // C5
-                    { freq: 493.88, duration: 0.5 }, // B4
-                    { freq: 440.00, duration: 0.5 }, // A4
-                    { freq: 392.00, duration: 0.5 }, // G4
-                    { freq: 349.23, duration: 0.5 }, // F4
-                    { freq: 329.63, duration: 0.5 }, // E4
-                    { freq: 293.66, duration: 0.5 }, // D4
+                // 两个不同的旋律
+                const melodies = [
+                    // 旋律1：轻快活泼
+                    [
+                        { freq: 261.63, duration: 0.4 }, // C4
+                        { freq: 329.63, duration: 0.4 }, // E4
+                        { freq: 392.00, duration: 0.4 }, // G4
+                        { freq: 523.25, duration: 0.4 }, // C5
+                        { freq: 392.00, duration: 0.4 }, // G4
+                        { freq: 329.63, duration: 0.4 }, // E4
+                        { freq: 261.63, duration: 0.8 }, // C4
+                        { freq: 293.66, duration: 0.4 }, // D4
+                        { freq: 349.23, duration: 0.4 }, // F4
+                        { freq: 392.00, duration: 0.4 }, // G4
+                        { freq: 523.25, duration: 0.4 }, // C5
+                        { freq: 392.00, duration: 0.4 }, // G4
+                        { freq: 329.63, duration: 0.4 }, // E4
+                        { freq: 261.63, duration: 0.8 }, // C4
+                    ],
+                    // 旋律2：舒缓优雅
+                    [
+                        { freq: 196.00, duration: 0.6 }, // G3
+                        { freq: 246.94, duration: 0.6 }, // B3
+                        { freq: 261.63, duration: 0.6 }, // C4
+                        { freq: 329.63, duration: 0.6 }, // E4
+                        { freq: 392.00, duration: 0.6 }, // G4
+                        { freq: 329.63, duration: 0.6 }, // E4
+                        { freq: 261.63, duration: 0.6 }, // C4
+                        { freq: 293.66, duration: 0.6 }, // D4
+                        { freq: 349.23, duration: 0.6 }, // F4
+                        { freq: 392.00, duration: 0.6 }, // G4
+                        { freq: 440.00, duration: 0.6 }, // A4
+                        { freq: 392.00, duration: 0.6 }, // G4
+                        { freq: 329.63, duration: 0.6 }, // E4
+                        { freq: 261.63, duration: 1.2 }, // C4
+                    ]
                 ];
 
-                let time = this.ctx.currentTime;
+                const notes = melodies[this.bgmIndex % melodies.length];
+                this.bgmIndex++;
+
                 let delay = 0;
 
                 notes.forEach((note, index) => {
@@ -478,7 +501,7 @@
                     delay += note.duration;
                 });
 
-                // 16拍后循环
+                // 循环播放
                 setTimeout(() => {
                     if (this.isPlayingBGM) {
                         this.playBGMSequence();
@@ -679,6 +702,9 @@
                 this.difficulty = 'medium';
                 this.language = 'zh';
                 this.audio = new AudioSystem();
+                this.turnStartTime = null;
+                this.turnTimer = null;
+                this.bgmIndex = 0;
                 
                 this.boardElement = document.getElementById('board');
                 this.messageElement = document.getElementById('message');
@@ -716,7 +742,11 @@
                         win2: '玩家 2 获胜！🎉',
                         winAI: '电脑获胜！🤖',
                         draw: '平局！🤝',
-                        gravityChanged: '重力方向反转！🔄'
+                        gravityChanged: '重力方向反转！🔄',
+                        timeout: '超时，切换玩家',
+                        player1Timeout: '玩家 1 超时，切换到玩家 2',
+                        player2Timeout: '玩家 2 超时，切换到玩家 1',
+                        aiTimeout: '电脑超时，切换到玩家 1'
                     },
                     en: {
                         title: 'Gravity Reversal Connect Four',
@@ -745,7 +775,11 @@
                         win2: 'Player 2 Wins! 🎉',
                         winAI: 'AI Wins! 🤖',
                         draw: 'Draw! 🤝',
-                        gravityChanged: 'Gravity Reversed! 🔄'
+                        gravityChanged: 'Gravity Reversed! 🔄',
+                        timeout: 'Timeout, switching player',
+                        player1Timeout: 'Player 1 timeout, switching to Player 2',
+                        player2Timeout: 'Player 2 timeout, switching to Player 1',
+                        aiTimeout: 'AI timeout, switching to Player 1'
                     }
                 };
 
@@ -755,7 +789,39 @@
             init() {
                 this.createBoard();
                 this.updateUI();
+                this.audio.playStart();
                 this.audio.startBGM();
+                this.startTurnTimer();
+            }
+
+            startTurnTimer() {
+                this.stopTurnTimer();
+                this.turnStartTime = Date.now();
+                this.turnTimer = setTimeout(() => {
+                    this.handleTurnTimeout();
+                }, 30000); // 30秒超时
+            }
+
+            stopTurnTimer() {
+                if (this.turnTimer) {
+                    clearTimeout(this.turnTimer);
+                    this.turnTimer = null;
+                }
+            }
+
+            handleTurnTimeout() {
+                // 超时处理：切换玩家
+                let msgKey;
+                if (this.mode === 'pve' && this.currentPlayer === 2) {
+                    msgKey = 'aiTimeout';
+                } else {
+                    msgKey = this.currentPlayer === 1 ? 'player1Timeout' : 'player2Timeout';
+                }
+                this.showMessage(this.getText(msgKey), 'timeout');
+                this.turnCount++;
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                this.updateUI();
+                this.startTurnTimer();
             }
 
             setLanguage(lang) {
@@ -828,22 +894,31 @@
                 if (this.gameOver) return;
                 if (this.mode === 'pve' && this.currentPlayer === 2) return;
 
-                let targetRow;
+                let targetRow, targetCol;
+                
                 if (this.gravityDirection === 'down') {
+                    // 重力向下：从顶部投放，找最下方空位
                     targetRow = this.findBottomEmptyRow(col);
+                    targetCol = col;
                     if (targetRow === -1) return;
                 } else if (this.gravityDirection === 'up') {
+                    // 重力向上：从底部投放，找最上方空位
                     targetRow = this.findTopEmptyRow(col);
+                    targetCol = col;
                     if (targetRow === -1) return;
                 } else if (this.gravityDirection === 'left') {
-                    targetRow = this.findLeftEmptyRow(col);
-                    if (targetRow === -1) return;
+                    // 重力向左：从右侧投放，找最左侧空位
+                    targetRow = col; // col 实际上是 row
+                    targetCol = this.findLeftEmptyRow(col);
+                    if (targetCol === -1) return;
                 } else if (this.gravityDirection === 'right') {
-                    targetRow = this.findRightEmptyRow(col);
-                    if (targetRow === -1) return;
+                    // 重力向右：从左侧投放，找最右侧空位
+                    targetRow = col; // col 实际上是 row
+                    targetCol = this.findRightEmptyRow(col);
+                    if (targetCol === -1) return;
                 }
 
-                this.placePiece(targetRow, col);
+                this.placePiece(targetRow, targetCol);
             }
 
             findBottomEmptyRow(col) {
@@ -874,7 +949,29 @@
                 return -1;
             }
 
+            // 新增：获取有效列（用于左右重力时的行）
+            getValidColumnsForGravity() {
+                const valid = [];
+                if (this.gravityDirection === 'down' || this.gravityDirection === 'up') {
+                    // 垂直重力：检查列
+                    for (let c = 0; c < this.cols; c++) {
+                        if (this.findBottomEmptyRow(c) !== -1) {
+                            valid.push(c);
+                        }
+                    }
+                } else {
+                    // 水平重力：检查行
+                    for (let r = 0; r < this.rows; r++) {
+                        if (this.findLeftEmptyRow(r) !== -1) {
+                            valid.push(r);
+                        }
+                    }
+                }
+                return valid;
+            }
+
             placePiece(row, col) {
+                this.stopTurnTimer();
                 this.board[row][col] = this.currentPlayer;
                 this.lastMove = { row, col };
                 this.updateCell(row, col);
@@ -904,6 +1001,7 @@
                 }
 
                 this.updateUI();
+                this.startTurnTimer();
 
                 // AI 回合
                 if (this.mode === 'pve' && this.currentPlayer === 2 && !this.gameOver) {
