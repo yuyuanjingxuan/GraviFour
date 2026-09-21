@@ -1,7 +1,9 @@
 # 🔄 重力反转四子棋
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
-[MIT 许可证](LICENSE) | [English README](README.en.md)
+
+[English README](README.en.md) | [中文 README](README.md)
 
 一个独特的四子棋变体，每隔若干回合重力方向会发生反转，棋子会随着重力重新分布！
 
