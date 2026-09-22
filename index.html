@@ -259,9 +259,6 @@
         }
         .rules p {
             margin: 8px 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
         .mode-selector {
@@ -969,8 +966,9 @@
                         rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
                         rule4: '⏱️ 每手棋限时 30 秒，超时强制换人；也可主动跳过。',
                         gravityModeLabel: '重力模式',
-                        gravityIntervalLabel: '每',
+                        gravityIntervalLabel: '第',
                         gravityIntervalUnit: '手',
+                        gravityIntervalLabelEvery: '每',
                         gravityModeInterval: '固定间隔',
                         gravityModeRandom: '随机间隔',
                         gravityModeFixed: '固定方向',
@@ -1018,8 +1016,9 @@
                         rule3: 'The drop slot is always opposite to gravity: down drops from top, up from bottom, left from the right side, right from the left side.',
                         rule4: '⏱️ Each move has a 30-second limit; timeout forces a switch. You can also pass.',
                         gravityModeLabel: 'Gravity Mode',
-                        gravityIntervalLabel: 'Every',
+                        gravityIntervalLabel: 'Move',
                         gravityIntervalUnit: 'moves',
+                        gravityIntervalLabelEvery: 'Every',
                         gravityModeInterval: 'Fixed Interval',
                         gravityModeRandom: 'Random Interval',
                         gravityModeFixed: 'Fixed Direction',
@@ -1139,8 +1138,8 @@
                 document.getElementById('rule4').textContent = t.rule4;
                 document.getElementById('gravityLabel').textContent = t.gravity;
                 document.getElementById('gravityModeLabel').textContent = t.gravityModeLabel;
-                document.getElementById('gravityIntervalLabel').textContent = t.gravityIntervalLabel;
                 document.getElementById('gravityIntervalUnit').textContent = t.gravityIntervalUnit;
+                this.updateIntervalDisplay();
                 document.querySelectorAll('.gravity-btn')[0].textContent = t.gravityModeInterval;
                 document.querySelectorAll('.gravity-btn')[1].textContent = t.gravityModeRandom;
                 document.querySelectorAll('.gravity-btn')[2].textContent = t.gravityModeFixed;
@@ -1220,12 +1219,16 @@
             updateIntervalDisplay() {
                 const container = document.getElementById('gravityIntervalContainer');
                 const valueSpan = document.getElementById('gravityIntervalValue');
+                const labelSpan = document.getElementById('gravityIntervalLabel');
                 const buttons = container.querySelectorAll('.interval-btn');
+                const t = this.texts[this.language];
                 if (this.gravityMode === 'random') {
+                    labelSpan.textContent = t.gravityIntervalLabel; // 第 / Move
                     buttons.forEach(btn => btn.style.display = 'none');
                     valueSpan.style.display = 'inline';
                     valueSpan.textContent = this.nextGravityInterval ?? '';
                 } else if (this.gravityMode === 'interval') {
+                    labelSpan.textContent = t.gravityIntervalLabelEvery; // 每 / Every
                     buttons.forEach(btn => btn.style.display = 'inline-block');
                     valueSpan.style.display = 'none';
                 }
