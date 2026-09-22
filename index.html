@@ -476,6 +476,7 @@
                 this.bgmGain = null;
                 this.isPlayingBGM = false;
                 this.bgmIndex = 0;
+                this.bgmToken = 0;
             }
 
             init() {
@@ -547,19 +548,21 @@
             startBGM() {
                 if (this.isPlayingBGM || !this.ctx) return;
                 this.isPlayingBGM = true;
-                this.playBGMSequence();
+                this.bgmToken++;
+                this.playBGMSequence(this.bgmToken);
             }
 
             stopBGM() {
                 this.isPlayingBGM = false;
+                this.bgmToken++; // 使旧旋律链失效，防止已排队的 setTimeout 继续播放
                 this.bgmOscillators.forEach(osc => {
                     try { osc.stop(); } catch(e) {}
                 });
                 this.bgmOscillators = [];
             }
 
-            playBGMSequence() {
-                if (!this.isPlayingBGM) return;
+            playBGMSequence(token) {
+                if (!this.isPlayingBGM || token !== this.bgmToken) return;
 
                 // 两个不同的旋律
                 const melodies = [
@@ -606,7 +609,7 @@
 
                 notes.forEach((note, index) => {
                     setTimeout(() => {
-                        if (this.isPlayingBGM) {
+                        if (this.isPlayingBGM && token === this.bgmToken) {
                             this.playTone(note.freq, 'triangle', note.duration, 0.15);
                         }
                     }, delay * 1000);
@@ -615,8 +618,8 @@
 
                 // 循环播放
                 setTimeout(() => {
-                    if (this.isPlayingBGM) {
-                        this.playBGMSequence();
+                    if (this.isPlayingBGM && token === this.bgmToken) {
+                        this.playBGMSequence(token);
                     }
                 }, delay * 1000);
             }
@@ -862,6 +865,7 @@
                 this.turnTimeLimit = 30000;
                 this.nextGravityDirection = null;
                 this.musicOn = true;
+                this.gameStarted = false;
                 
                 this.boardElement = document.getElementById('board');
                 this.messageElement = document.getElementById('message');
@@ -972,7 +976,9 @@
                 this.updateTexts();
                 this.updateUI();
                 this.audio.playStart();
-                this.audio.startBGM();
+                if (this.musicOn) {
+                    this.audio.startBGM();
+                }
                 this.startTurnTimer();
             }
 
@@ -1067,6 +1073,7 @@
             }
 
             setMode(mode) {
+                if (this.gameStarted && !this.gameOver) return; // 开局后锁定模式
                 this.mode = mode;
                 document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
                 document.getElementById(`mode${mode.toUpperCase()}`).classList.add('active');
@@ -1090,6 +1097,7 @@
             }
 
             setBoardSize(rows, cols) {
+                if (this.gameStarted && !this.gameOver) return; // 开局后锁定棋盘大小
                 this.rows = rows;
                 this.cols = cols;
                 document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
@@ -1208,6 +1216,7 @@
 
             placePiece(row, col) {
                 this.stopTurnTimer();
+                this.gameStarted = true; // 第一手落下后锁定模式与棋盘大小
                 this.board[row][col] = this.currentPlayer;
                 this.lastMove = { row, col };
                 this.updateCell(row, col);
@@ -1500,6 +1509,10 @@
                 
                 this.passBtn.disabled = this.gameOver || (this.mode === 'pve' && this.currentPlayer === 2);
                 
+                // 开局后（第一手落下）锁定模式与棋盘大小，重开或终局后解锁
+                const locked = this.gameStarted && !this.gameOver;
+                document.querySelectorAll('.mode-btn, .size-btn').forEach(btn => btn.disabled = locked);
+                
                 this.updatePlayerTurnText();
             }
 
@@ -1539,6 +1552,7 @@
                 this.gravityDirection = 'down';
                 this.nextGravityDirection = null;
                 this.gameOver = false;
+                this.gameStarted = false;
                 this.lastMove = null;
                 
                 this.createBoard();
