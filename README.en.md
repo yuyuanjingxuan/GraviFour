@@ -1,4 +1,4 @@
-# 🔄 Gravity Reversal Connect Four
+# 🔄 Gravity Change Connect Four
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
@@ -12,17 +12,17 @@
 
 [中文 README](README.md)
 
-A unique variant of Connect Four where gravity direction reverses every few moves, causing pieces to redistribute!
+A unique variant of Connect Four where gravity direction **randomly changes** to a new direction every few moves, causing pieces to redistribute!
 
 ## 💡 Name Origin
 
-**GraviFour** = **Grav**ity + Connect **Four** — Connect Four where gravity flips and pieces redistribute.
+**GraviFour** = **Grav**ity + Connect **Four** — Connect Four where gravity randomly changes direction (not just flips) and pieces redistribute.
 
 ## 🎮 Game Rules
 
 1. **Basic Rules**: Click the board to drop pieces. First player to connect 4 same-color pieces (horizontally, vertically, or diagonally) wins
 2. **Gravity Mechanism**: Pieces fall automatically due to gravity
-3. **Gravity Reversal**: Every 6 moves, gravity **randomly** changes to a new direction (never the same as the current one)
+3. **Gravity Change**: Gravity changes to a **new random direction** (never the same as the current one), with 3 modes: Fixed Interval (every N moves, 4/6/8/10/12), Random Interval (every 4~12 moves), Fixed Direction (normal Connect Four)
    - ⬇️ Gravity Down: Drop from top, pieces settle at bottom
    - ⬆️ Gravity Up: Drop from bottom, pieces settle at top
    - ⬅️ Gravity Left: Drop from the right side, pieces settle at the left
@@ -36,8 +36,8 @@ A unique variant of Connect Four where gravity direction reverses every few move
 ## 🎯 Features
 
 - 🎨 Beautiful gradient background and 3D pieces
-- 🎲 Random gravity reversal with a 2-move advance warning
-- 📐 Adjustable board size (6×7 / 7×8 / 8×9)
+- 🎲 3 gravity change modes (Fixed Interval / Random Interval / Fixed Direction) with a 2-move advance warning
+- 📐 Adjustable board size (6×7 / 7×7 / 7×8 / 8×8 / 8×9)
 - 🤖 PVE mode with 4 AI difficulty levels
 - ⏱️ 30-second per-move countdown, timeout forces a switch
 - ⏭️ Pass button
@@ -55,7 +55,7 @@ No installation or build tools required.
 
 ## 📝 Game Example
 
-| Gravity Down (Default) ⬇️ | After Reversal (Gravity Up) ⬆️ |
+| Gravity Down (Default) ⬇️ | After Change (Gravity Up) ⬆️ |
 |:---:|:---:|
 | Drop from top, pieces settle at bottom | Drop from bottom, pieces settle at top |
 | ![Gravity Down](images/screenshot-gravity-down.png) | ![Gravity Up](images/screenshot-gravity-up.png) |
@@ -70,4 +70,4 @@ An innovative variant of the classic Connect Four game.
 
 ---
 
-[Back to Top](#-gravity-reversal-connect-four)
+[Back to Top](#-gravity-change-connect-four)

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="yuyuanjingxuan">
-    <meta name="description" content="重力反转四子棋 GraviFour - 重力会反转的四子棋变体，单文件 HTML5 游戏 | Gravity Reversal Connect Four by yuyuanjingxuan">
-    <title>重力反转四子棋 - Gravity Reversal Connect Four</title>
+    <meta name="description" content="重力变换四子棋 GraviFour - 重力会随机变换方向的四子棋变体，单文件 HTML5 游戏 | Gravity Change Connect Four by yuyuanjingxuan">
+    <title>重力变换四子棋 - Gravity Change Connect Four</title>
     <style>
         * {
             margin: 0;
@@ -478,7 +478,7 @@
         </div>
     </div>
 
-    <h1 id="gameTitle">重力反转四子棋</h1>
+    <h1 id="gameTitle">重力变换四子棋</h1>
 
     <div class="lang-selector">
         <button class="lang-btn active" onclick="game.setLanguage('zh')">中文</button>
@@ -486,7 +486,7 @@
     </div>
 
     <div class="info-panel">
-        <div><span id="turnLabel">手数</span>: <span id="turnCount">0</span></div>
+        <div><span id="turnLabel">总手数</span>: <span id="turnCount">0</span></div>
         <div class="gravity-indicator">
             <span id="gravityLabel">重力方向</span>: <span id="gravityDir">向下</span> <span class="arrow" id="gravityArrow">⬇️</span>
         </div>
@@ -951,6 +951,7 @@
                 this.board = [];
                 this.currentPlayer = 1;
                 this.turnCount = 0;
+                this.totalMoves = 0;
                 this.gravityDirection = 'down'; // down, up, left, right
                 this.gameOver = false;
                 this.lastMove = null;
@@ -979,8 +980,8 @@
 
                 this.texts = {
                     zh: {
-                        title: '重力反转四子棋',
-                        turn: '手数',
+                        title: '重力变换四子棋',
+                        turn: '总手数',
                         gravity: '重力方向',
                         gravityDown: '向下',
                         gravityUp: '向上',
@@ -1022,15 +1023,15 @@
                         win2: '玩家 2 获胜！🎉',
                         winAI: '电脑获胜！🤖',
                         draw: '平局！🤝',
-                        gravityChanged: '重力方向反转！🔄',
+                        gravityChanged: '重力方向变换！🔄',
                         timeout: '超时，切换玩家',
                         player1Timeout: '玩家 1 超时，切换到玩家 2',
                         player2Timeout: '玩家 2 超时，切换到玩家 1',
                         aiTimeout: '电脑超时，切换到玩家 1'
                     },
                     en: {
-                        title: 'Gravity Reversal Connect Four',
-                        turn: 'Move',
+                        title: 'Gravity Change Connect Four',
+                        turn: 'Total Moves',
                         gravity: 'Gravity',
                         gravityDown: 'Down',
                         gravityUp: 'Up',
@@ -1136,6 +1137,7 @@
                 }
                 this.showMessage(this.getText(msgKey), 'timeout');
                 this.turnCount++;
+                this.totalMoves++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
                 this.checkGravityProgress();
                 this.updateUI();
@@ -1414,6 +1416,7 @@
                 }
 
                 this.turnCount++;
+                this.totalMoves++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
 
                 this.checkGravityProgress();
@@ -1535,6 +1538,7 @@
                 const t = this.texts[this.language];
                 this.showMessage(t.passMsg.replace('{p}', this.currentPlayer), '');
                 this.turnCount++;
+                this.totalMoves++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
                 this.checkGravityProgress();
                 this.updateUI();
@@ -1666,7 +1670,7 @@
             }
 
             updateUI() {
-                this.turnCountElement.textContent = this.turnCount;
+                this.turnCountElement.textContent = this.totalMoves;
                 
                 this.updateGravityIndicator();
                 
@@ -1712,6 +1716,7 @@
             restart() {
                 this.currentPlayer = 1;
                 this.turnCount = 0;
+                this.totalMoves = 0;
                 this.gravityDirection = 'down';
                 this.nextGravityDirection = null;
                 this.nextGravityInterval = null;
