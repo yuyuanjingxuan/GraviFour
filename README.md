@@ -3,25 +3,32 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
 
-[English README](README.en.md) | [中文 README](README.md)
+[English README](README.en.md)
 
 一个独特的四子棋变体，每隔若干回合重力方向会发生反转，棋子会随着重力重新分布！
 
 ## 🎮 游戏规则
 
-1. **基本规则**：在7列棋盘中点击投放棋子，先连成4个同色棋子（横、竖、斜）者获胜
+1. **基本规则**：点击棋盘投放棋子，先连成4个同色棋子（横、竖、斜）者获胜
 2. **重力机制**：棋子受重力影响自动下落
-3. **重力反转**：每6个回合重力方向反转
+3. **重力反转**：每6个回合重力方向反转（下→上→左→右循环）
    - ⬇️ 重力向下：从顶部投放，棋子靠底部
    - ⬆️ 重力向上：从底部投放，棋子靠顶部
+   - ⬅️ 重力向左：从右侧投放，棋子靠左侧
+   - ➡️ 重力向右：从左侧投放，棋子靠右侧
 4. **重新分布**：重力反转时，所有棋子会自动重新分布到新的重力方向
 
 ## 🎯 特色功能
 
 - 🎨 精美的渐变背景和3D棋子效果
-- 🔄 创新的重力反转机制
+- 🔄 创新的重力反转机制（上下左右四个方向）
+- 📐 可调节棋盘大小（6×7 / 7×8 / 8×9）
+- 🤖 PVE 模式，4 档 AI 难度
+- 🔊 Web Audio 合成音效与 BGM
+- 🌐 中英文界面
 - 📱 响应式设计，支持手机和平板
 - 🏆 胜利/平局提示
+- ⏱️ 每手棋计时（30 秒超时自动换人）
 - 🔄 重新开始功能
 
 ## 🚀 快速开始

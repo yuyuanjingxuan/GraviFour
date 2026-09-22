@@ -3,25 +3,32 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
 
-[中文 README](README.md) | [English README](README.en.md)
+[中文 README](README.md)
 
 A unique variant of Connect Four where gravity direction reverses every few turns, causing pieces to redistribute!
 
 ## 🎮 Game Rules
 
-1. **Basic Rules**: Click on columns to drop pieces. First player to connect 4 same-color pieces (horizontally, vertically, or diagonally) wins
+1. **Basic Rules**: Click the board to drop pieces. First player to connect 4 same-color pieces (horizontally, vertically, or diagonally) wins
 2. **Gravity Mechanism**: Pieces fall automatically due to gravity
-3. **Gravity Reversal**: Gravity direction reverses every 6 turns
+3. **Gravity Reversal**: Gravity direction reverses every 6 turns (down→up→left→right cycle)
    - ⬇️ Gravity Down: Drop from top, pieces settle at bottom
    - ⬆️ Gravity Up: Drop from bottom, pieces settle at top
+   - ⬅️ Gravity Left: Drop from the right side, pieces settle at the left
+   - ➡️ Gravity Right: Drop from the left side, pieces settle at the right
 4. **Redistribution**: When gravity reverses, all pieces automatically redistribute to the new gravity direction
 
 ## 🎯 Features
 
 - 🎨 Beautiful gradient background and 3D pieces
-- 🔄 Innovative gravity reversal mechanism
+- 🔄 Innovative gravity reversal mechanism (all four directions)
+- 📐 Adjustable board size (6×7 / 7×8 / 8×9)
+- 🤖 PVE mode with 4 AI difficulty levels
+- 🔊 Web Audio synthesized sound effects and BGM
+- 🌐 Chinese / English interface
 - 📱 Responsive design, supports mobile and tablet
 - 🏆 Win/Draw notifications
+- ⏱️ Per-turn timer (30s timeout auto-switches player)
 - 🔄 Restart functionality
 
 ## 🚀 Quick Start

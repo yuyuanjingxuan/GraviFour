@@ -300,6 +300,30 @@
             border-color: #f39c12;
         }
 
+        .size-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .size-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .size-btn.active {
+            background: #27ae60;
+            border-color: #27ae60;
+        }
+
         @media (max-width: 600px) {
             .board {
                 grid-template-columns: repeat(7, 45px);
@@ -341,6 +365,13 @@
             <button class="mode-btn" id="modePVE" onclick="game.setMode('pve')">PVE</button>
         </div>
 
+        <div class="size-selector">
+            <span id="sizeLabel">棋盘大小</span>
+            <button class="size-btn active" data-size="6x7" onclick="game.setBoardSize(6,7)">6×7</button>
+            <button class="size-btn" data-size="7x8" onclick="game.setBoardSize(7,8)">7×8</button>
+            <button class="size-btn" data-size="8x9" onclick="game.setBoardSize(8,9)">8×9</button>
+        </div>
+
         <div class="difficulty-selector" id="difficultyContainer" style="display: none;">
             <button class="diff-btn active" onclick="game.setDifficulty('easy')">简单</button>
             <button class="diff-btn" onclick="game.setDifficulty('medium')">中等</button>
@@ -357,9 +388,9 @@
     <div class="message" id="message"></div>
 
     <div class="rules">
-        <p id="rule1">🎯 <strong>游戏规则：</strong>在 columns 中点击投放棋子，棋子受重力影响自动下落。</p>
-        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转！棋子会重新分布。</p>
-        <p id="rule3">投放口总在重力的反方向（重力向下时从顶部投放，重力向上时从底部投放）。</p>
+        <p id="rule1">🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。</p>
+        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转（下→上→左→右循环）！棋子会重新分布。</p>
+        <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
     </div>
 
     <script>
@@ -529,43 +560,52 @@
                 this.difficulty = difficulty;
             }
 
-            getBestMove(board, player) {
+            getBestMove(board, player, gravity) {
                 const opponent = player === 1 ? 2 : 1;
                 const cols = board[0].length;
                 const rows = board.length;
-                
+                const horizontal = (gravity === 'left' || gravity === 'right');
+                const axisCount = horizontal ? rows : cols;
+
                 let bestScore = -Infinity;
                 let bestMoves = [];
 
                 // 根据难度调整搜索深度
                 const depth = this.getDepth();
 
-                for (let col = 0; col < cols; col++) {
-                    const row = this.getAvailableRow(board, col);
-                    if (row === -1) continue;
+                for (let i = 0; i < axisCount; i++) {
+                    let row, col;
+                    if (horizontal) {
+                        row = i;
+                        col = gravity === 'left' ? this.findLeft(board, row) : this.findRight(board, row);
+                    } else {
+                        col = i;
+                        row = gravity === 'up' ? this.findTop(board, col) : this.findBottom(board, col);
+                    }
+                    if (row === -1 || col === -1) continue;
 
                     // 评估这个位置
                     let score = this.evaluateMove(board, row, col, player, opponent, depth);
 
                     if (score > bestScore) {
                         bestScore = score;
-                        bestMoves = [col];
+                        bestMoves = [i];
                     } else if (score === bestScore) {
-                        bestMoves.push(col);
+                        bestMoves.push(i);
                     }
                 }
 
                 // 添加一些随机性
                 if (this.difficulty === 'easy' && Math.random() < 0.3) {
-                    const validCols = this.getValidColumns(board);
-                    if (validCols.length > 0) {
-                        return validCols[Math.floor(Math.random() * validCols.length)];
+                    const valid = this.getValidAxes(board, gravity);
+                    if (valid.length > 0) {
+                        return valid[Math.floor(Math.random() * valid.length)];
                     }
                 }
 
-                return bestMoves.length > 0 ? 
-                    bestMoves[Math.floor(Math.random() * bestMoves.length)] : 
-                    Math.floor(cols / 2);
+                return bestMoves.length > 0 ?
+                    bestMoves[Math.floor(Math.random() * bestMoves.length)] :
+                    Math.floor(axisCount / 2);
             }
 
             getDepth() {
@@ -579,8 +619,33 @@
             }
 
             getAvailableRow(board, col) {
+                return this.findBottom(board, col);
+            }
+
+            findBottom(board, col) {
                 for (let r = board.length - 1; r >= 0; r--) {
                     if (board[r][col] === 0) return r;
+                }
+                return -1;
+            }
+
+            findTop(board, col) {
+                for (let r = 0; r < board.length; r++) {
+                    if (board[r][col] === 0) return r;
+                }
+                return -1;
+            }
+
+            findLeft(board, row) {
+                for (let c = 0; c < board[0].length; c++) {
+                    if (board[row][c] === 0) return c;
+                }
+                return -1;
+            }
+
+            findRight(board, row) {
+                for (let c = board[0].length - 1; c >= 0; c--) {
+                    if (board[row][c] === 0) return c;
                 }
                 return -1;
             }
@@ -676,11 +741,20 @@
             }
 
             getValidColumns(board) {
-                const cols = board[0].length;
+                return this.getValidAxes(board, 'down');
+            }
+
+            getValidAxes(board, gravity) {
+                const horizontal = (gravity === 'left' || gravity === 'right');
+                const axisCount = horizontal ? board.length : board[0].length;
                 const valid = [];
-                for (let c = 0; c < cols; c++) {
-                    if (this.getAvailableRow(board, c) !== -1) {
-                        valid.push(c);
+                for (let i = 0; i < axisCount; i++) {
+                    if (horizontal) {
+                        const col = gravity === 'left' ? this.findLeft(board, i) : this.findRight(board, i);
+                        if (col !== -1) valid.push(i);
+                    } else {
+                        const row = gravity === 'up' ? this.findTop(board, i) : this.findBottom(board, i);
+                        if (row !== -1) valid.push(i);
                     }
                 }
                 return valid;
@@ -725,9 +799,10 @@
                         gravityRight: '向右',
                         player: '玩家',
                         restart: '重新开始',
-                        rule1: '🎯 <strong>游戏规则：</strong>在 columns 中点击投放棋子，棋子受重力影响自动下落。',
-                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转！棋子会重新分布。',
-                        rule3: '投放口总在重力的反方向（重力向下时从顶部投放，重力向上时从底部投放）。',
+                        sizeLabel: '棋盘大小',
+                        rule1: '🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。',
+                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转（下→上→左→右循环）！棋子会重新分布。',
+                        rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
                         pvp: 'PVP',
                         pve: 'PVE',
                         difficulty: '难度',
@@ -758,9 +833,10 @@
                         gravityRight: 'Right',
                         player: 'Player',
                         restart: 'Restart',
-                        rule1: '🎯 <strong>Rules:</strong> Click on columns to drop pieces. Pieces fall due to gravity.',
-                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> turns, gravity reverses! Pieces redistribute.',
-                        rule3: 'Drop口 is always opposite to gravity direction.',
+                        sizeLabel: 'Board Size',
+                        rule1: '🎯 <strong>Rules:</strong> Click the board to drop pieces. Pieces fall due to gravity. First to connect 4 (horizontal, vertical, diagonal) wins.',
+                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> turns, gravity reverses (down→up→left→right)! Pieces redistribute.',
+                        rule3: 'The drop slot is always opposite to gravity: down drops from top, up from bottom, left from the right side, right from the left side.',
                         pvp: 'PVP',
                         pve: 'PVE',
                         difficulty: 'Difficulty',
@@ -788,6 +864,7 @@
 
             init() {
                 this.createBoard();
+                this.updateTexts();
                 this.updateUI();
                 this.audio.playStart();
                 this.audio.startBGM();
@@ -836,6 +913,7 @@
                 document.getElementById('gameTitle').textContent = t.title;
                 document.getElementById('turnLabel').textContent = t.turn;
                 document.getElementById('restartLabel').textContent = t.restart;
+                document.getElementById('sizeLabel').textContent = t.sizeLabel;
                 document.getElementById('rule1').innerHTML = t.rule1;
                 document.getElementById('rule2').innerHTML = t.rule2;
                 document.getElementById('rule3').textContent = t.rule3;
@@ -874,47 +952,66 @@
                 this.restart();
             }
 
+            setBoardSize(rows, cols) {
+                this.rows = rows;
+                this.cols = cols;
+                document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.size-btn[data-size="${rows}x${cols}"]`).classList.add('active');
+                this.restart();
+            }
+
             createBoard() {
                 this.boardElement.innerHTML = '';
                 this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+
+                // 根据列数和视口宽度自适应单元格大小，让棋盘适配屏幕
+                const maxW = Math.min(560, window.innerWidth - 40);
+                const gap = 8, pad = 8;
+                let cellSize = Math.floor((maxW - 2 * pad - (this.cols - 1) * gap) / this.cols);
+                cellSize = Math.max(28, Math.min(60, cellSize));
+
+                this.boardElement.style.gridTemplateColumns = `repeat(${this.cols}, ${cellSize}px)`;
+                this.boardElement.style.gridTemplateRows = `repeat(${this.rows}, ${cellSize}px)`;
 
                 for (let r = 0; r < this.rows; r++) {
                     for (let c = 0; c < this.cols; c++) {
                         const cell = document.createElement('div');
                         cell.className = 'cell';
+                        cell.style.width = cellSize + 'px';
+                        cell.style.height = cellSize + 'px';
                         cell.dataset.row = r;
                         cell.dataset.col = c;
-                        cell.addEventListener('click', () => this.handleCellClick(c));
+                        cell.addEventListener('click', () => this.handleCellClick(r, c));
                         this.boardElement.appendChild(cell);
                     }
                 }
             }
 
-            handleCellClick(col) {
+            handleCellClick(row, col) {
                 if (this.gameOver) return;
                 if (this.mode === 'pve' && this.currentPlayer === 2) return;
 
                 let targetRow, targetCol;
                 
                 if (this.gravityDirection === 'down') {
-                    // 重力向下：从顶部投放，找最下方空位
+                    // 重力向下：从顶部投放，找该列最下方空位
                     targetRow = this.findBottomEmptyRow(col);
                     targetCol = col;
                     if (targetRow === -1) return;
                 } else if (this.gravityDirection === 'up') {
-                    // 重力向上：从底部投放，找最上方空位
+                    // 重力向上：从底部投放，找该列最上方空位
                     targetRow = this.findTopEmptyRow(col);
                     targetCol = col;
                     if (targetRow === -1) return;
                 } else if (this.gravityDirection === 'left') {
-                    // 重力向左：从右侧投放，找最左侧空位
-                    targetRow = col; // col 实际上是 row
-                    targetCol = this.findLeftEmptyRow(col);
+                    // 重力向左：从右侧投放，找该行最左侧空位
+                    targetRow = row;
+                    targetCol = this.findLeftEmptyRow(row);
                     if (targetCol === -1) return;
                 } else if (this.gravityDirection === 'right') {
-                    // 重力向右：从左侧投放，找最右侧空位
-                    targetRow = col; // col 实际上是 row
-                    targetCol = this.findRightEmptyRow(col);
+                    // 重力向右：从左侧投放，找该行最右侧空位
+                    targetRow = row;
+                    targetCol = this.findRightEmptyRow(row);
                     if (targetCol === -1) return;
                 }
 
@@ -936,14 +1033,16 @@
             }
 
             findLeftEmptyRow(row) {
-                for (let c = this.cols - 1; c >= 0; c--) {
+                // 重力向左：棋子靠左侧，落点为该行最左侧空位
+                for (let c = 0; c < this.cols; c++) {
                     if (this.board[row][c] === 0) return c;
                 }
                 return -1;
             }
 
             findRightEmptyRow(row) {
-                for (let c = 0; c < this.cols; c++) {
+                // 重力向右：棋子靠右侧，落点为该行最右侧空位
+                for (let c = this.cols - 1; c >= 0; c--) {
                     if (this.board[row][c] === 0) return c;
                 }
                 return -1;
@@ -1010,21 +1109,24 @@
             }
 
             aiMove() {
-                const col = this.ai.getBestMove(this.board, 2);
-                
-                let targetRow;
-                if (this.gravityDirection === 'down') {
-                    targetRow = this.findBottomEmptyRow(col);
-                } else if (this.gravityDirection === 'up') {
-                    targetRow = this.findTopEmptyRow(col);
-                } else if (this.gravityDirection === 'left') {
-                    targetRow = this.findLeftEmptyRow(col);
-                } else if (this.gravityDirection === 'right') {
-                    targetRow = this.findRightEmptyRow(col);
+                const axis = this.ai.getBestMove(this.board, 2, this.gravityDirection);
+                const horizontal = (this.gravityDirection === 'left' || this.gravityDirection === 'right');
+
+                let targetRow, targetCol;
+                if (horizontal) {
+                    targetRow = axis;
+                    targetCol = this.gravityDirection === 'left'
+                        ? this.findLeftEmptyRow(axis)
+                        : this.findRightEmptyRow(axis);
+                } else {
+                    targetCol = axis;
+                    targetRow = this.gravityDirection === 'up'
+                        ? this.findTopEmptyRow(axis)
+                        : this.findBottomEmptyRow(axis);
                 }
 
-                if (targetRow !== -1) {
-                    this.placePiece(targetRow, col);
+                if (targetRow !== -1 && targetCol !== -1) {
+                    this.placePiece(targetRow, targetCol);
                 }
             }
 
@@ -1079,12 +1181,14 @@
                         }
                         
                         if (this.gravityDirection === 'left') {
-                            let newCol = this.cols - pieces.length;
+                            // 重力向左：棋子靠左侧
+                            let newCol = 0;
                             for (let piece of pieces) {
                                 newBoard[r][newCol++] = piece;
                             }
                         } else {
-                            let newCol = 0;
+                            // 重力向右：棋子靠右侧
+                            let newCol = this.cols - pieces.length;
                             for (let piece of pieces) {
                                 newBoard[r][newCol++] = piece;
                             }
@@ -1189,14 +1293,13 @@
             }
 
             restart() {
-                this.board = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
                 this.currentPlayer = 1;
                 this.turnCount = 0;
                 this.gravityDirection = 'down';
                 this.gameOver = false;
                 this.lastMove = null;
                 
-                this.renderBoard();
+                this.createBoard();
                 this.showMessage('', '');
                 this.updateUI();
                 
