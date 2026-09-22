@@ -1057,6 +1057,7 @@
                 document.getElementById('rule2').innerHTML = t.rule2;
                 document.getElementById('rule3').textContent = t.rule3;
                 document.getElementById('rule4').textContent = t.rule4;
+                document.getElementById('gravityLabel').textContent = t.gravity;
                 document.getElementById('passLabel').textContent = t.pass;
                 document.getElementById('musicLabel').textContent = this.musicOn ? t.music : t.musicOff;
                 document.getElementById('timerLabel').textContent = t.timerLabel;
@@ -1089,10 +1090,12 @@
             }
 
             setDifficulty(difficulty) {
+                if (this.gameStarted && !this.gameOver) return; // 开局后锁定难度
                 this.difficulty = difficulty;
                 this.ai.setDifficulty(difficulty);
                 document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.remove('active'));
-                event.target.classList.add('active');
+                const activeBtn = document.querySelector(`.diff-btn[onclick="game.setDifficulty('${difficulty}')"]`);
+                if (activeBtn) activeBtn.classList.add('active');
                 this.restart();
             }
 
@@ -1509,9 +1512,9 @@
                 
                 this.passBtn.disabled = this.gameOver || (this.mode === 'pve' && this.currentPlayer === 2);
                 
-                // 开局后（第一手落下）锁定模式与棋盘大小，重开或终局后解锁
+                // 开局后（第一手落下）锁定模式、棋盘大小与难度，重开或终局后解锁
                 const locked = this.gameStarted && !this.gameOver;
-                document.querySelectorAll('.mode-btn, .size-btn').forEach(btn => btn.disabled = locked);
+                document.querySelectorAll('.mode-btn, .size-btn, .diff-btn').forEach(btn => btn.disabled = locked);
                 
                 this.updatePlayerTurnText();
             }

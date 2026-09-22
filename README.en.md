@@ -15,24 +15,29 @@ A unique variant of Connect Four where gravity direction reverses every few turn
 
 1. **Basic Rules**: Click the board to drop pieces. First player to connect 4 same-color pieces (horizontally, vertically, or diagonally) wins
 2. **Gravity Mechanism**: Pieces fall automatically due to gravity
-3. **Gravity Reversal**: Gravity direction reverses every 6 turns (down→up→left→right cycle)
+3. **Gravity Reversal**: Every 6 turns, gravity **randomly** changes to a new direction (never the same as the current one)
    - ⬇️ Gravity Down: Drop from top, pieces settle at bottom
    - ⬆️ Gravity Up: Drop from bottom, pieces settle at top
    - ⬅️ Gravity Left: Drop from the right side, pieces settle at the left
    - ➡️ Gravity Right: Drop from the left side, pieces settle at the right
-4. **Redistribution**: When gravity reverses, all pieces automatically redistribute to the new gravity direction
+   - ⚠️ A prominent flashing warning appears **2 turns in advance**, telling you when and to which direction gravity will change
+4. **Redistribution**: When gravity changes, all pieces automatically redistribute to the new gravity direction
+5. **Win Detection**: After a gravity change redistributes the pieces, wins are checked again — if one player connects 4, they win; if **both** players connect 4, it's a draw
+6. **Timer & Pass**: Each turn has a 30-second limit (live countdown, turns red and flashes in the last 5 seconds); timeout forces a switch. You can also press "Pass" to skip your turn
+7. **Locked After Start**: Once the first piece is dropped, game mode, board size, and AI difficulty are locked — press "Restart" to change them
 
 ## 🎯 Features
 
 - 🎨 Beautiful gradient background and 3D pieces
-- 🔄 Innovative gravity reversal mechanism (all four directions)
+- 🎲 Random gravity reversal with a 2-turn advance warning
 - 📐 Adjustable board size (6×7 / 7×8 / 8×9)
 - 🤖 PVE mode with 4 AI difficulty levels
-- 🔊 Web Audio synthesized sound effects and BGM
+- ⏱️ 30-second per-turn countdown, timeout forces a switch
+- ⏭️ Pass button
+- 🔊 Web Audio synthesized sound effects and BGM, with a one-click music toggle
+- 🏆 Win/Draw notifications (including post-gravity-change win detection)
 - 🌐 Chinese / English interface
 - 📱 Responsive design, supports mobile and tablet
-- 🏆 Win/Draw notifications
-- ⏱️ Per-turn timer (30s timeout auto-switches player)
 - 🔄 Restart functionality
 
 ## 🚀 Quick Start
