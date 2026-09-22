@@ -324,6 +324,54 @@
             border-color: #27ae60;
         }
 
+        .gravity-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .gravity-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .gravity-btn.active {
+            background: #9b59b6;
+            border-color: #9b59b6;
+        }
+
+        .gravity-interval-selector {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+            color: white;
+            font-size: 0.95rem;
+        }
+
+        .interval-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .interval-btn.active {
+            background: #9b59b6;
+            border-color: #9b59b6;
+        }
+
         .btn-pass {
             background: #f39c12;
             color: white;
@@ -450,6 +498,23 @@
             <button class="diff-btn" onclick="game.setDifficulty('expert')">专家</button>
         </div>
 
+        <div class="gravity-selector">
+            <span id="gravityModeLabel">重力模式</span>
+            <button class="gravity-btn active" data-mode="interval" onclick="game.setGravityMode('interval')">固定间隔</button>
+            <button class="gravity-btn" data-mode="random" onclick="game.setGravityMode('random')">随机间隔</button>
+            <button class="gravity-btn" data-mode="fixed" onclick="game.setGravityMode('fixed')">固定方向</button>
+        </div>
+        <div class="gravity-interval-selector" id="gravityIntervalContainer">
+            <span id="gravityIntervalLabel">每</span>
+            <button class="interval-btn" data-interval="4" onclick="game.setGravityInterval(4)">4</button>
+            <button class="interval-btn" data-interval="6" onclick="game.setGravityInterval(6)">6</button>
+            <button class="interval-btn" data-interval="8" onclick="game.setGravityInterval(8)">8</button>
+            <button class="interval-btn active" data-interval="10" onclick="game.setGravityInterval(10)">10</button>
+            <button class="interval-btn" data-interval="12" onclick="game.setGravityInterval(12)">12</button>
+            <span id="gravityIntervalValue" style="display:none; font-weight:bold; color:#9b59b6;"></span>
+            <span id="gravityIntervalUnit">手</span>
+        </div>
+
         <div class="player-turn" id="playerTurn">
             <span></span><span id="playerLabel">轮到玩家 1</span>
         </div>
@@ -462,7 +527,7 @@
 
     <div class="rules">
         <p id="rule1">🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。</p>
-        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 手重力随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。</p>
+        <p id="rule2">🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。</p>
         <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
         <p id="rule4">⏱️ 每手棋限时 30 秒，超时强制换人；也可主动“跳过”。</p>
     </div>
@@ -849,7 +914,9 @@
             constructor() {
                 this.rows = 6;
                 this.cols = 7;
-                this.gravityChangeInterval = 6;
+                this.gravityChangeInterval = 10;
+                this.gravityMode = 'interval'; // interval, random, fixed
+                this.nextGravityInterval = null;
                 this.board = [];
                 this.currentPlayer = 1;
                 this.turnCount = 0;
@@ -892,9 +959,15 @@
                         restart: '重新开始',
                         sizeLabel: '棋盘大小',
                         rule1: '🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。',
-                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 手重力随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。',
+                        rule2: '🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。',
                         rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
                         rule4: '⏱️ 每手棋限时 30 秒，超时强制换人；也可主动跳过。',
+                        gravityModeLabel: '重力模式',
+                        gravityIntervalLabel: '每',
+                        gravityIntervalUnit: '手',
+                        gravityModeInterval: '固定间隔',
+                        gravityModeRandom: '随机间隔',
+                        gravityModeFixed: '固定方向',
                         pass: '跳过',
                         music: '音乐',
                         musicOff: '已静音',
@@ -935,9 +1008,15 @@
                         restart: 'Restart',
                         sizeLabel: 'Board Size',
                         rule1: '🎯 <strong>Rules:</strong> Click the board to drop pieces. Pieces fall due to gravity. First to connect 4 (horizontal, vertical, diagonal) wins.',
-                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> moves, gravity randomly changes to a new direction (announced 2 moves in advance)! Pieces redistribute.',
+                        rule2: '🔄 <strong>Special:</strong> Gravity randomly changes to a new direction (announced 2 moves in advance)! Pieces redistribute. Choose fixed interval, random interval, or fixed direction (classic Connect Four) before the game starts.',
                         rule3: 'The drop slot is always opposite to gravity: down drops from top, up from bottom, left from the right side, right from the left side.',
                         rule4: '⏱️ Each move has a 30-second limit; timeout forces a switch. You can also pass.',
+                        gravityModeLabel: 'Gravity Mode',
+                        gravityIntervalLabel: 'Every',
+                        gravityIntervalUnit: 'moves',
+                        gravityModeInterval: 'Fixed Interval',
+                        gravityModeRandom: 'Random Interval',
+                        gravityModeFixed: 'Fixed Direction',
                         pass: 'Pass',
                         music: 'Music',
                         musicOff: 'Muted',
@@ -974,6 +1053,7 @@
             init() {
                 this.createBoard();
                 this.updateTexts();
+                this.updateIntervalDisplay();
                 this.updateUI();
                 this.audio.playStart();
                 if (this.musicOn) {
@@ -1024,13 +1104,7 @@
                 this.showMessage(this.getText(msgKey), 'timeout');
                 this.turnCount++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                if (this.turnCount === this.gravityChangeInterval - 2 && !this.nextGravityDirection) {
-                    this.scheduleGravityChange();
-                }
-                this.updateGravityWarning();
-                if (this.turnCount >= this.gravityChangeInterval) {
-                    this.toggleGravity();
-                }
+                this.checkGravityProgress();
                 this.updateUI();
                 if (!this.gameOver) {
                     this.startTurnTimer();
@@ -1058,6 +1132,12 @@
                 document.getElementById('rule3').textContent = t.rule3;
                 document.getElementById('rule4').textContent = t.rule4;
                 document.getElementById('gravityLabel').textContent = t.gravity;
+                document.getElementById('gravityModeLabel').textContent = t.gravityModeLabel;
+                document.getElementById('gravityIntervalLabel').textContent = t.gravityIntervalLabel;
+                document.getElementById('gravityIntervalUnit').textContent = t.gravityIntervalUnit;
+                document.querySelectorAll('.gravity-btn')[0].textContent = t.gravityModeInterval;
+                document.querySelectorAll('.gravity-btn')[1].textContent = t.gravityModeRandom;
+                document.querySelectorAll('.gravity-btn')[2].textContent = t.gravityModeFixed;
                 document.getElementById('passLabel').textContent = t.pass;
                 document.getElementById('musicLabel').textContent = this.musicOn ? t.music : t.musicOff;
                 document.getElementById('timerLabel').textContent = t.timerLabel;
@@ -1072,8 +1152,7 @@
                     this.updatePlayerTurnText();
                 }
                 this.updateGravityWarning();
-                // 重力方向指示器随语言重渲染
-                this.gravityDirElement.textContent = t[`gravity${this.gravityDirection.charAt(0).toUpperCase() + this.gravityDirection.slice(1)}`];
+                this.updateGravityIndicator();
             }
 
             setMode(mode) {
@@ -1109,6 +1188,59 @@
                 document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('active'));
                 document.querySelector(`.size-btn[data-size="${rows}x${cols}"]`).classList.add('active');
                 this.restart();
+            }
+
+            setGravityMode(mode) {
+                if (this.gameStarted && !this.gameOver) return; // 开局后锁定重力模式
+                this.gravityMode = mode;
+                document.querySelectorAll('.gravity-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.gravity-btn[data-mode="${mode}"]`).classList.add('active');
+                document.getElementById('gravityIntervalContainer').style.display = (mode === 'fixed') ? 'none' : 'flex';
+                this.restart();
+            }
+
+            setGravityInterval(n) {
+                if (this.gameStarted && !this.gameOver) return; // 开局后锁定重力间隔
+                this.gravityChangeInterval = n;
+                document.querySelectorAll('.interval-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector(`.interval-btn[data-interval="${n}"]`).classList.add('active');
+                this.restart();
+            }
+
+            rollRandomInterval() {
+                return 4 + Math.floor(Math.random() * 9); // 4-12 手
+            }
+
+            updateIntervalDisplay() {
+                const container = document.getElementById('gravityIntervalContainer');
+                const valueSpan = document.getElementById('gravityIntervalValue');
+                const buttons = container.querySelectorAll('.interval-btn');
+                if (this.gravityMode === 'random') {
+                    buttons.forEach(btn => btn.style.display = 'none');
+                    valueSpan.style.display = 'inline';
+                    valueSpan.textContent = this.nextGravityInterval ?? '';
+                } else if (this.gravityMode === 'interval') {
+                    buttons.forEach(btn => btn.style.display = 'inline-block');
+                    valueSpan.style.display = 'none';
+                }
+            }
+
+            checkGravityProgress() {
+                if (this.gravityMode === 'fixed') return;
+                const interval = this.gravityMode === 'random' ? this.nextGravityInterval : this.gravityChangeInterval;
+                if (this.turnCount === interval - 2 && !this.nextGravityDirection) {
+                    this.scheduleGravityChange();
+                }
+                if (this.turnCount >= interval) {
+                    this.toggleGravity();
+                }
+            }
+
+            updateGravityIndicator() {
+                const t = this.texts[this.language];
+                const arrows = { down: '⬇️', up: '⬆️', left: '⬅️', right: '➡️' };
+                this.gravityDirElement.textContent = t[`gravity${this.gravityDirection.charAt(0).toUpperCase() + this.gravityDirection.slice(1)}`];
+                this.gravityArrowElement.textContent = arrows[this.gravityDirection];
             }
 
             createBoard() {
@@ -1247,14 +1379,7 @@
                 this.turnCount++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
 
-                // 提前 2 回合预告重力变化
-                if (this.turnCount === this.gravityChangeInterval - 2 && !this.nextGravityDirection) {
-                    this.scheduleGravityChange();
-                }
-
-                if (this.turnCount >= this.gravityChangeInterval) {
-                    this.toggleGravity();
-                }
+                this.checkGravityProgress();
 
                 this.updateUI();
                 if (!this.gameOver) {
@@ -1320,9 +1445,13 @@
                     this.showMessage(msg, 'win-player' + (w.p1 ? 1 : 2));
                 }
                 
-                // 重置回合计数器
-                this.turnCount = 0;
+                // 重置回合计数器（仅非固定方向模式）
+                if (this.gravityMode !== 'fixed') {
+                    this.turnCount = 0;
+                    if (this.gravityMode === 'random') this.nextGravityInterval = this.rollRandomInterval();
+                }
                 this.updateGravityWarning();
+                this.updateIntervalDisplay();
             }
 
             scheduleGravityChange() {
@@ -1339,7 +1468,8 @@
                 if (this.nextGravityDirection && !this.gameOver) {
                     const dirName = t['gravity' + this.nextGravityDirection.charAt(0).toUpperCase() + this.nextGravityDirection.slice(1)];
                     const dirText = dirName + ' ' + arrows[this.nextGravityDirection];
-                    const turnsLeft = this.gravityChangeInterval - this.turnCount;
+                    const interval = this.gravityMode === 'random' ? this.nextGravityInterval : this.gravityChangeInterval;
+                    const turnsLeft = interval - this.turnCount;
                     const text = turnsLeft <= 1
                         ? t.gravityWarningNow.replace('{dir}', dirText)
                         : t.gravityWarning.replace('{n}', turnsLeft).replace('{dir}', dirText);
@@ -1369,13 +1499,7 @@
                 this.showMessage(t.passMsg.replace('{p}', this.currentPlayer), '');
                 this.turnCount++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
-                if (this.turnCount === this.gravityChangeInterval - 2 && !this.nextGravityDirection) {
-                    this.scheduleGravityChange();
-                }
-                this.updateGravityWarning();
-                if (this.turnCount >= this.gravityChangeInterval) {
-                    this.toggleGravity();
-                }
+                this.checkGravityProgress();
                 this.updateUI();
                 if (!this.gameOver) {
                     this.startTurnTimer();
@@ -1507,17 +1631,13 @@
             updateUI() {
                 this.turnCountElement.textContent = this.turnCount;
                 
-                const t = this.texts[this.language];
-                this.gravityDirElement.textContent = t[`gravity${this.gravityDirection.charAt(0).toUpperCase() + this.gravityDirection.slice(1)}`];
-                
-                const arrows = { down: '⬇️', up: '⬆️', left: '⬅️', right: '➡️' };
-                this.gravityArrowElement.textContent = arrows[this.gravityDirection];
+                this.updateGravityIndicator();
                 
                 this.passBtn.disabled = this.gameOver || (this.mode === 'pve' && this.currentPlayer === 2);
                 
-                // 开局后（第一手落下）锁定模式、棋盘大小与难度，重开或终局后解锁
+                // 开局后（第一手落下）锁定模式、棋盘大小、难度与重力设置，重开或终局后解锁
                 const locked = this.gameStarted && !this.gameOver;
-                document.querySelectorAll('.mode-btn, .size-btn, .diff-btn').forEach(btn => btn.disabled = locked);
+                document.querySelectorAll('.mode-btn, .size-btn, .diff-btn, .gravity-btn, .interval-btn').forEach(btn => btn.disabled = locked);
                 
                 this.updatePlayerTurnText();
             }
@@ -1557,6 +1677,8 @@
                 this.turnCount = 0;
                 this.gravityDirection = 'down';
                 this.nextGravityDirection = null;
+                this.nextGravityInterval = null;
+                if (this.gravityMode === 'random') this.nextGravityInterval = this.rollRandomInterval();
                 this.gameOver = false;
                 this.gameStarted = false;
                 this.lastMove = null;
@@ -1564,6 +1686,7 @@
                 this.createBoard();
                 this.showMessage('', '');
                 this.updateGravityWarning();
+                this.updateIntervalDisplay();
                 this.updateUI();
                 
                 this.audio.stopBGM();
