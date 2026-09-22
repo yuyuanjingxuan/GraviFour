@@ -179,6 +179,13 @@
         .controls {
             margin-top: 20px;
             display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .controls-row {
+            display: flex;
             flex-wrap: wrap;
             gap: 15px;
             align-items: center;
@@ -264,7 +271,6 @@
         .mode-selector {
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
         }
 
         .mode-btn {
@@ -285,7 +291,6 @@
         .difficulty-selector {
             display: flex;
             gap: 8px;
-            margin-bottom: 10px;
         }
 
         .diff-btn {
@@ -307,7 +312,6 @@
             display: flex;
             gap: 8px;
             align-items: center;
-            margin-bottom: 10px;
             color: white;
             font-size: 0.95rem;
         }
@@ -331,7 +335,6 @@
             display: flex;
             gap: 8px;
             align-items: center;
-            margin-bottom: 10px;
             color: white;
             font-size: 0.95rem;
         }
@@ -355,7 +358,6 @@
             display: flex;
             gap: 8px;
             align-items: center;
-            margin-bottom: 10px;
             color: white;
             font-size: 0.95rem;
         }
@@ -482,48 +484,56 @@
     </div>
 
     <div class="controls">
-        <div class="mode-selector">
-            <button class="mode-btn active" id="modePVP" onclick="game.setMode('pvp')">PVP</button>
-            <button class="mode-btn" id="modePVE" onclick="game.setMode('pve')">PVE</button>
+        <div class="controls-row">
+            <div class="mode-selector">
+                <button class="mode-btn active" id="modePVP" onclick="game.setMode('pvp')">PVP</button>
+                <button class="mode-btn" id="modePVE" onclick="game.setMode('pve')">PVE</button>
+            </div>
+
+            <div class="size-selector">
+                <span id="sizeLabel">棋盘大小</span>
+                <button class="size-btn active" data-size="6x7" onclick="game.setBoardSize(6,7)">6×7</button>
+                <button class="size-btn" data-size="7x7" onclick="game.setBoardSize(7,7)">7×7</button>
+                <button class="size-btn" data-size="7x8" onclick="game.setBoardSize(7,8)">7×8</button>
+                <button class="size-btn" data-size="8x8" onclick="game.setBoardSize(8,8)">8×8</button>
+                <button class="size-btn" data-size="8x9" onclick="game.setBoardSize(8,9)">8×9</button>
+            </div>
+
+            <div class="difficulty-selector" id="difficultyContainer" style="display: none;">
+                <button class="diff-btn active" onclick="game.setDifficulty('easy')">简单</button>
+                <button class="diff-btn" onclick="game.setDifficulty('medium')">中等</button>
+                <button class="diff-btn" onclick="game.setDifficulty('hard')">困难</button>
+                <button class="diff-btn" onclick="game.setDifficulty('expert')">专家</button>
+            </div>
         </div>
 
-        <div class="size-selector">
-            <span id="sizeLabel">棋盘大小</span>
-            <button class="size-btn active" data-size="6x7" onclick="game.setBoardSize(6,7)">6×7</button>
-            <button class="size-btn" data-size="7x8" onclick="game.setBoardSize(7,8)">7×8</button>
-            <button class="size-btn" data-size="8x9" onclick="game.setBoardSize(8,9)">8×9</button>
+        <div class="controls-row">
+            <div class="gravity-selector">
+                <span id="gravityModeLabel">重力变换模式</span>
+                <button class="gravity-btn active" data-mode="interval" onclick="game.setGravityMode('interval')">固定间隔</button>
+                <button class="gravity-btn" data-mode="random" onclick="game.setGravityMode('random')">随机间隔</button>
+                <button class="gravity-btn" data-mode="fixed" onclick="game.setGravityMode('fixed')">固定方向</button>
+            </div>
+            <div class="gravity-interval-selector" id="gravityIntervalContainer">
+                <span id="gravityIntervalLabel">第</span>
+                <button class="interval-btn" data-interval="4" onclick="game.setGravityInterval(4)">4</button>
+                <button class="interval-btn" data-interval="6" onclick="game.setGravityInterval(6)">6</button>
+                <button class="interval-btn" data-interval="8" onclick="game.setGravityInterval(8)">8</button>
+                <button class="interval-btn active" data-interval="10" onclick="game.setGravityInterval(10)">10</button>
+                <button class="interval-btn" data-interval="12" onclick="game.setGravityInterval(12)">12</button>
+                <span id="gravityIntervalValue" style="display:none; font-weight:bold; color:#9b59b6;"></span>
+                <span id="gravityIntervalUnit">手</span>
+            </div>
         </div>
 
-        <div class="difficulty-selector" id="difficultyContainer" style="display: none;">
-            <button class="diff-btn active" onclick="game.setDifficulty('easy')">简单</button>
-            <button class="diff-btn" onclick="game.setDifficulty('medium')">中等</button>
-            <button class="diff-btn" onclick="game.setDifficulty('hard')">困难</button>
-            <button class="diff-btn" onclick="game.setDifficulty('expert')">专家</button>
+        <div class="controls-row">
+            <div class="player-turn" id="playerTurn">
+                <span></span><span id="playerLabel">轮到玩家 1</span>
+            </div>
+            <button class="btn-restart" onclick="game.restart()"><span id="restartLabel">重新开始</span></button>
+            <button class="btn-pass" onclick="game.passTurn()"><span id="passLabel">跳过</span></button>
+            <button class="btn-music" id="musicBtn" onclick="game.toggleMusic()"><span id="musicIcon">🔊</span> <span id="musicLabel">音乐</span></button>
         </div>
-
-        <div class="gravity-selector">
-            <span id="gravityModeLabel">重力模式</span>
-            <button class="gravity-btn active" data-mode="interval" onclick="game.setGravityMode('interval')">固定间隔</button>
-            <button class="gravity-btn" data-mode="random" onclick="game.setGravityMode('random')">随机间隔</button>
-            <button class="gravity-btn" data-mode="fixed" onclick="game.setGravityMode('fixed')">固定方向</button>
-        </div>
-        <div class="gravity-interval-selector" id="gravityIntervalContainer">
-            <span id="gravityIntervalLabel">第</span>
-            <button class="interval-btn" data-interval="4" onclick="game.setGravityInterval(4)">4</button>
-            <button class="interval-btn" data-interval="6" onclick="game.setGravityInterval(6)">6</button>
-            <button class="interval-btn" data-interval="8" onclick="game.setGravityInterval(8)">8</button>
-            <button class="interval-btn active" data-interval="10" onclick="game.setGravityInterval(10)">10</button>
-            <button class="interval-btn" data-interval="12" onclick="game.setGravityInterval(12)">12</button>
-            <span id="gravityIntervalValue" style="display:none; font-weight:bold; color:#9b59b6;"></span>
-            <span id="gravityIntervalUnit">手</span>
-        </div>
-
-        <div class="player-turn" id="playerTurn">
-            <span></span><span id="playerLabel">轮到玩家 1</span>
-        </div>
-        <button class="btn-restart" onclick="game.restart()"><span id="restartLabel">重新开始</span></button>
-        <button class="btn-pass" onclick="game.passTurn()"><span id="passLabel">跳过</span></button>
-        <button class="btn-music" id="musicBtn" onclick="game.toggleMusic()"><span id="musicIcon">🔊</span> <span id="musicLabel">音乐</span></button>
     </div>
 
     <div class="message" id="message"></div>
@@ -965,7 +975,7 @@
                         rule2: '🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。',
                         rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
                         rule4: '⏱️ 每手棋限时 30 秒，超时强制换人；也可主动跳过。',
-                        gravityModeLabel: '重力模式',
+                        gravityModeLabel: '重力变换模式',
                         gravityIntervalLabel: '第',
                         gravityIntervalUnit: '手',
                         gravityIntervalLabelEvery: '每',
@@ -1015,7 +1025,7 @@
                         rule2: '🔄 <strong>Special:</strong> Gravity randomly changes to a new direction (announced 2 moves in advance)! Pieces redistribute. Choose fixed interval, random interval, or fixed direction (classic Connect Four) before the game starts.',
                         rule3: 'The drop slot is always opposite to gravity: down drops from top, up from bottom, left from the right side, right from the left side.',
                         rule4: '⏱️ Each move has a 30-second limit; timeout forces a switch. You can also pass.',
-                        gravityModeLabel: 'Gravity Mode',
+                        gravityModeLabel: 'Gravity Change Mode',
                         gravityIntervalLabel: 'Move',
                         gravityIntervalUnit: 'moves',
                         gravityIntervalLabelEvery: 'Every',
