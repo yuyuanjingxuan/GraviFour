@@ -2,6 +2,13 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
+[![Stars](https://img.shields.io/github/stars/yuyuanjingxuan/GraviFour?style=social)](https://github.com/yuyuanjingxuan/GraviFour/stargazers)
+[![Forks](https://img.shields.io/github/forks/yuyuanjingxuan/GraviFour?style=social)](https://github.com/yuyuanjingxuan/GraviFour/forks)
+[![Single File](https://img.shields.io/badge/Single%20File-HTML5-blue)]()
+[![No Build](https://img.shields.io/badge/No%20Build-Required-green)]()
+[![Players](https://img.shields.io/badge/Players-1~2-orange)]()
+
+**作者 / Author**: [yuyuanjingxuan](https://github.com/yuyuanjingxuan)
 
 [English README](README.en.md)
 

@@ -39,3 +39,17 @@ jobs:
           else
             echo "Warning: HTML structure might have issues"
           fi
+
+      - name: Check inline JS syntax
+        run: |
+          echo "Checking inline JS syntax..."
+          node -e "const fs=require('fs');const html=fs.readFileSync('index.html','utf8');const m=html.match(/<script>([\s\S]*?)<\/script>/);if(!m){console.error('No inline script found');process.exit(1)}fs.writeFileSync('/tmp/check.js',m[1])"
+          node --check /tmp/check.js
+          echo "JS syntax OK"
+
+      - name: Check author attribution
+        run: |
+          echo "Checking author attribution..."
+          grep -q "yuyuanjingxuan" index.html || { echo "ERROR: author name missing in index.html"; exit 1; }
+          grep -q "yuyuanjingxuan" LICENSE || { echo "ERROR: author name missing in LICENSE"; exit 1; }
+          echo "Author attribution present!"

@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="yuyuanjingxuan">
+    <meta name="description" content="重力反转四子棋 GraviFour - 重力会反转的四子棋变体，单文件 HTML5 游戏 | Gravity Reversal Connect Four by yuyuanjingxuan">
     <title>重力反转四子棋 - Gravity Reversal Connect Four</title>
     <style>
         * {
@@ -268,6 +270,20 @@
             margin: 8px 0;
         }
 
+        .footer {
+            margin-top: 15px;
+            color: rgba(255,255,255,0.6);
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        .footer a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
         .mode-selector {
             display: flex;
             gap: 10px;
@@ -509,7 +525,7 @@
 
         <div class="controls-row">
             <div class="gravity-selector">
-                <span id="gravityModeLabel">重力变换模式</span>
+                <span id="gravityModeLabel">重力变更模式</span>
                 <button class="gravity-btn active" data-mode="interval" onclick="game.setGravityMode('interval')">固定间隔</button>
                 <button class="gravity-btn" data-mode="random" onclick="game.setGravityMode('random')">随机间隔</button>
                 <button class="gravity-btn" data-mode="fixed" onclick="game.setGravityMode('fixed')">固定方向</button>
@@ -544,6 +560,8 @@
         <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
         <p id="rule4">⏱️ 每手棋限时 30 秒，超时强制换人；也可主动“跳过”。</p>
     </div>
+
+    <div class="footer">© 2026 yuyuanjingxuan · <a href="https://github.com/yuyuanjingxuan/GraviFour" target="_blank" rel="noopener">GraviFour on GitHub</a></div>
 
     <script>
         // 音频系统 - 使用 Web Audio API
@@ -975,7 +993,7 @@
                         rule2: '🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。',
                         rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
                         rule4: '⏱️ 每手棋限时 30 秒，超时强制换人；也可主动跳过。',
-                        gravityModeLabel: '重力变换模式',
+                        gravityModeLabel: '重力变更模式',
                         gravityIntervalLabel: '第',
                         gravityIntervalUnit: '手',
                         gravityIntervalLabelEvery: '每',
