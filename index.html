@@ -255,7 +255,13 @@
             font-size: 0.9rem;
             text-align: center;
             max-width: 600px;
-            line-height: 1.6;
+            line-height: 1.4;
+        }
+        .rules p {
+            margin: 8px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .mode-selector {
@@ -505,7 +511,7 @@
             <button class="gravity-btn" data-mode="fixed" onclick="game.setGravityMode('fixed')">固定方向</button>
         </div>
         <div class="gravity-interval-selector" id="gravityIntervalContainer">
-            <span id="gravityIntervalLabel">每</span>
+            <span id="gravityIntervalLabel">第</span>
             <button class="interval-btn" data-interval="4" onclick="game.setGravityInterval(4)">4</button>
             <button class="interval-btn" data-interval="6" onclick="game.setGravityInterval(6)">6</button>
             <button class="interval-btn" data-interval="8" onclick="game.setGravityInterval(8)">8</button>
