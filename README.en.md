@@ -7,6 +7,10 @@
 
 A unique variant of Connect Four where gravity direction reverses every few turns, causing pieces to redistribute!
 
+## 💡 Name Origin
+
+**GraviFour** = **Grav**ity + Connect **Four** — Connect Four where gravity flips and pieces redistribute.
+
 ## 🎮 Game Rules
 
 1. **Basic Rules**: Click the board to drop pieces. First player to connect 4 same-color pieces (horizontally, vertically, or diagonally) wins

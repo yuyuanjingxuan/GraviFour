@@ -324,6 +324,74 @@
             border-color: #27ae60;
         }
 
+        .btn-pass {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-pass:hover {
+            background: #f5b041;
+            transform: translateY(-2px);
+        }
+
+        .btn-music {
+            background: #8e44ad;
+            color: white;
+        }
+
+        .btn-music:hover {
+            background: #9b59b6;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .turn-timer {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 4px 12px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 15px;
+            font-weight: bold;
+        }
+
+        .turn-timer.timer-low {
+            background: rgba(231, 76, 60, 0.85);
+            animation: timerPulse 0.5s infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.55; }
+        }
+
+        .gravity-warning {
+            margin-bottom: 15px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #f39c12, #e74c3c);
+            color: white;
+            font-size: 1.3rem;
+            font-weight: bold;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(231, 76, 60, 0.5);
+            animation: warningPulse 1s infinite;
+            display: none;
+        }
+
+        .gravity-warning.show {
+            display: block;
+        }
+
+        @keyframes warningPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
         @media (max-width: 600px) {
             .board {
                 grid-template-columns: repeat(7, 45px);
@@ -353,7 +421,10 @@
         <div class="gravity-indicator">
             <span id="gravityLabel">重力方向</span>: <span id="gravityDir">向下</span> <span class="arrow" id="gravityArrow">⬇️</span>
         </div>
+        <div class="turn-timer" id="turnTimerBox"><span id="timerLabel">剩余时间</span>: <span id="turnTimer">30</span>s</div>
     </div>
+
+    <div class="gravity-warning" id="gravityWarning"></div>
 
     <div class="game-container">
         <div class="board" id="board"></div>
@@ -383,14 +454,17 @@
             <span></span><span id="playerLabel">玩家 1 回合</span>
         </div>
         <button class="btn-restart" onclick="game.restart()"><span id="restartLabel">重新开始</span></button>
+        <button class="btn-pass" onclick="game.passTurn()"><span id="passLabel">跳过</span></button>
+        <button class="btn-music" id="musicBtn" onclick="game.toggleMusic()"><span id="musicIcon">🔊</span> <span id="musicLabel">音乐</span></button>
     </div>
 
     <div class="message" id="message"></div>
 
     <div class="rules">
         <p id="rule1">🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。</p>
-        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转（下→上→左→右循环）！棋子会重新分布。</p>
+        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力随机变为新方向（提前 2 回合醒目预告）！棋子会重新分布。</p>
         <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
+        <p id="rule4">⏱️ 每手棋限时 30 秒，超时强制换人；也可主动“跳过”。</p>
     </div>
 
     <script>
@@ -443,6 +517,12 @@
                 this.playTone(220, 'sawtooth', 0.4, 0.25);
                 setTimeout(() => this.playTone(330, 'sawtooth', 0.4, 0.25), 100);
                 setTimeout(() => this.playTone(440, 'sawtooth', 0.6, 0.25), 200);
+            }
+
+            playGravityWarning() {
+                this.playTone(880, 'square', 0.15, 0.2);
+                setTimeout(() => this.playTone(880, 'square', 0.15, 0.2), 200);
+                setTimeout(() => this.playTone(660, 'square', 0.3, 0.2), 400);
             }
 
             playWin() {
@@ -779,6 +859,9 @@
                 this.audio = new AudioSystem();
                 this.turnStartTime = null;
                 this.turnTimer = null;
+                this.turnTimeLimit = 30000;
+                this.nextGravityDirection = null;
+                this.musicOn = true;
                 
                 this.boardElement = document.getElementById('board');
                 this.messageElement = document.getElementById('message');
@@ -786,6 +869,10 @@
                 this.playerTurnElement = document.getElementById('playerTurn');
                 this.gravityDirElement = document.getElementById('gravityDir');
                 this.gravityArrowElement = document.getElementById('gravityArrow');
+                this.turnTimerElement = document.getElementById('turnTimer');
+                this.turnTimerBox = document.getElementById('turnTimerBox');
+                this.gravityWarningElement = document.getElementById('gravityWarning');
+                this.passBtn = document.querySelector('.btn-pass');
                 this.ai = new AI(this.difficulty);
 
                 this.texts = {
@@ -801,8 +888,17 @@
                         restart: '重新开始',
                         sizeLabel: '棋盘大小',
                         rule1: '🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。',
-                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力方向反转（下→上→左→右循环）！棋子会重新分布。',
+                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力随机变为新方向（提前 2 回合醒目预告）！棋子会重新分布。',
                         rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
+                        rule4: '⏱️ 每手棋限时 30 秒，超时强制换人；也可主动跳过。',
+                        pass: '跳过',
+                        music: '音乐',
+                        musicOff: '已静音',
+                        timerLabel: '剩余时间',
+                        passMsg: '玩家 {p} 跳过',
+                        gravityWarning: '⚠️ 重力将在 {n} 回合后变为 {dir}！',
+                        gravityWarningNow: '⚠️ 下一手棋后重力将变为 {dir}！',
+                        drawBoth: '重力变化后双方都连成 4 子，和棋！🤝',
                         pvp: 'PVP',
                         pve: 'PVE',
                         difficulty: '难度',
@@ -835,8 +931,17 @@
                         restart: 'Restart',
                         sizeLabel: 'Board Size',
                         rule1: '🎯 <strong>Rules:</strong> Click the board to drop pieces. Pieces fall due to gravity. First to connect 4 (horizontal, vertical, diagonal) wins.',
-                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> turns, gravity reverses (down→up→left→right)! Pieces redistribute.',
+                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> turns, gravity randomly changes to a new direction (announced 2 turns in advance)! Pieces redistribute.',
                         rule3: 'The drop slot is always opposite to gravity: down drops from top, up from bottom, left from the right side, right from the left side.',
+                        rule4: '⏱️ Each turn has a 30-second limit; timeout forces a switch. You can also pass.',
+                        pass: 'Pass',
+                        music: 'Music',
+                        musicOff: 'Muted',
+                        timerLabel: 'Time Left',
+                        passMsg: 'Player {p} passed',
+                        gravityWarning: '⚠️ Gravity will change to {dir} in {n} turns!',
+                        gravityWarningNow: '⚠️ Gravity will change to {dir} after the next move!',
+                        drawBoth: 'Both players connected 4 after the gravity change — Draw! 🤝',
                         pvp: 'PVP',
                         pve: 'PVE',
                         difficulty: 'Difficulty',
@@ -874,19 +979,35 @@
             startTurnTimer() {
                 this.stopTurnTimer();
                 this.turnStartTime = Date.now();
-                this.turnTimer = setTimeout(() => {
-                    this.handleTurnTimeout();
-                }, 30000); // 30秒超时
+                this.updateTimerDisplay();
+                this.turnTimer = setInterval(() => {
+                    const remaining = Math.ceil((this.turnStartTime + this.turnTimeLimit - Date.now()) / 1000);
+                    this.updateTimerDisplay(remaining);
+                    if (remaining <= 0) {
+                        this.stopTurnTimer();
+                        this.handleTurnTimeout();
+                    }
+                }, 200);
+            }
+
+            updateTimerDisplay(remaining) {
+                if (remaining === undefined) {
+                    remaining = Math.ceil((this.turnStartTime + this.turnTimeLimit - Date.now()) / 1000);
+                }
+                remaining = Math.max(0, remaining);
+                this.turnTimerElement.textContent = remaining;
+                this.turnTimerBox.classList.toggle('timer-low', remaining <= 5);
             }
 
             stopTurnTimer() {
                 if (this.turnTimer) {
-                    clearTimeout(this.turnTimer);
+                    clearInterval(this.turnTimer);
                     this.turnTimer = null;
                 }
             }
 
             handleTurnTimeout() {
+                if (this.gameOver) return;
                 // 超时处理：切换玩家
                 let msgKey;
                 if (this.mode === 'pve' && this.currentPlayer === 2) {
@@ -897,8 +1018,20 @@
                 this.showMessage(this.getText(msgKey), 'timeout');
                 this.turnCount++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                if (this.turnCount === this.gravityChangeInterval - 2 && !this.nextGravityDirection) {
+                    this.scheduleGravityChange();
+                }
+                this.updateGravityWarning();
+                if (this.turnCount >= this.gravityChangeInterval) {
+                    this.toggleGravity();
+                }
                 this.updateUI();
-                this.startTurnTimer();
+                if (!this.gameOver) {
+                    this.startTurnTimer();
+                    if (this.mode === 'pve' && this.currentPlayer === 2) {
+                        setTimeout(() => this.aiMove(), 500);
+                    }
+                }
             }
 
             setLanguage(lang) {
@@ -917,6 +1050,10 @@
                 document.getElementById('rule1').innerHTML = t.rule1;
                 document.getElementById('rule2').innerHTML = t.rule2;
                 document.getElementById('rule3').textContent = t.rule3;
+                document.getElementById('rule4').textContent = t.rule4;
+                document.getElementById('passLabel').textContent = t.pass;
+                document.getElementById('musicLabel').textContent = this.musicOn ? t.music : t.musicOff;
+                document.getElementById('timerLabel').textContent = t.timerLabel;
                 document.getElementById('modePVP').textContent = t.pvp;
                 document.getElementById('modePVE').textContent = t.pve;
                 document.getElementById('difficultyContainer').querySelectorAll('.diff-btn')[0].textContent = t.easy;
@@ -1095,16 +1232,23 @@
                 this.turnCount++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
 
-                if (this.turnCount % this.gravityChangeInterval === 0) {
+                // 提前 2 回合预告重力变化
+                if (this.turnCount === this.gravityChangeInterval - 2 && !this.nextGravityDirection) {
+                    this.scheduleGravityChange();
+                }
+
+                if (this.turnCount >= this.gravityChangeInterval) {
                     this.toggleGravity();
                 }
 
                 this.updateUI();
-                this.startTurnTimer();
+                if (!this.gameOver) {
+                    this.startTurnTimer();
 
-                // AI 回合
-                if (this.mode === 'pve' && this.currentPlayer === 2 && !this.gameOver) {
-                    setTimeout(() => this.aiMove(), 500);
+                    // AI 回合
+                    if (this.mode === 'pve' && this.currentPlayer === 2) {
+                        setTimeout(() => this.aiMove(), 500);
+                    }
                 }
             }
 
@@ -1131,18 +1275,113 @@
             }
 
             toggleGravity() {
-                const directions = ['down', 'up', 'left', 'right'];
-                const currentIndex = directions.indexOf(this.gravityDirection);
-                const nextIndex = (currentIndex + 1) % 4;
-                this.gravityDirection = directions[nextIndex];
+                // 使用已预告的随机方向；若没有预告则随机选一个
+                if (!this.nextGravityDirection) {
+                    const directions = ['down', 'up', 'left', 'right'];
+                    const options = directions.filter(d => d !== this.gravityDirection);
+                    this.nextGravityDirection = options[Math.floor(Math.random() * options.length)];
+                }
+                this.gravityDirection = this.nextGravityDirection;
+                this.nextGravityDirection = null;
                 
                 this.audio.playGravityChange();
                 this.showMessage(this.getText('gravityChanged'), '');
                 
                 this.rearrangePieces();
                 
+                // 重力变化后检测胜负：一方连4判胜，双方都连4判和
+                const w = this.checkBoardWin();
+                if (w.p1 && w.p2) {
+                    this.gameOver = true;
+                    this.audio.stopBGM();
+                    this.audio.playDraw();
+                    this.showMessage(this.getText('drawBoth'), 'draw');
+                } else if (w.p1 || w.p2) {
+                    this.gameOver = true;
+                    this.audio.stopBGM();
+                    this.audio.playWin();
+                    const t = this.texts[this.language];
+                    const msg = w.p1 ? t.win1 : (this.mode === 'pve' ? t.winAI : t.win2);
+                    this.showMessage(msg, 'win-player' + (w.p1 ? 1 : 2));
+                }
+                
                 // 重置回合计数器
                 this.turnCount = 0;
+                this.updateGravityWarning();
+            }
+
+            scheduleGravityChange() {
+                const directions = ['down', 'up', 'left', 'right'];
+                const options = directions.filter(d => d !== this.gravityDirection);
+                this.nextGravityDirection = options[Math.floor(Math.random() * options.length)];
+                this.audio.playGravityWarning();
+                this.updateGravityWarning();
+            }
+
+            updateGravityWarning() {
+                const t = this.texts[this.language];
+                const arrows = { down: '⬇️', up: '⬆️', left: '⬅️', right: '➡️' };
+                if (this.nextGravityDirection && !this.gameOver) {
+                    const dirName = t['gravity' + this.nextGravityDirection.charAt(0).toUpperCase() + this.nextGravityDirection.slice(1)];
+                    const dirText = dirName + ' ' + arrows[this.nextGravityDirection];
+                    const turnsLeft = this.gravityChangeInterval - this.turnCount;
+                    const text = turnsLeft <= 1
+                        ? t.gravityWarningNow.replace('{dir}', dirText)
+                        : t.gravityWarning.replace('{n}', turnsLeft).replace('{dir}', dirText);
+                    this.gravityWarningElement.textContent = text;
+                    this.gravityWarningElement.classList.add('show');
+                } else {
+                    this.gravityWarningElement.classList.remove('show');
+                }
+            }
+
+            checkBoardWin() {
+                const hasWin = (player) => {
+                    for (let r = 0; r < this.rows; r++) {
+                        for (let c = 0; c < this.cols; c++) {
+                            if (this.board[r][c] === player && this.checkWin(r, c)) return true;
+                        }
+                    }
+                    return false;
+                };
+                return { p1: hasWin(1), p2: hasWin(2) };
+            }
+
+            passTurn() {
+                if (this.gameOver) return;
+                if (this.mode === 'pve' && this.currentPlayer === 2) return;
+                const t = this.texts[this.language];
+                this.showMessage(t.passMsg.replace('{p}', this.currentPlayer), '');
+                this.turnCount++;
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+                if (this.turnCount === this.gravityChangeInterval - 2 && !this.nextGravityDirection) {
+                    this.scheduleGravityChange();
+                }
+                this.updateGravityWarning();
+                if (this.turnCount >= this.gravityChangeInterval) {
+                    this.toggleGravity();
+                }
+                this.updateUI();
+                if (!this.gameOver) {
+                    this.startTurnTimer();
+                    if (this.mode === 'pve' && this.currentPlayer === 2) {
+                        setTimeout(() => this.aiMove(), 500);
+                    }
+                }
+            }
+
+            toggleMusic() {
+                this.musicOn = !this.musicOn;
+                const t = this.texts[this.language];
+                if (this.musicOn) {
+                    this.audio.startBGM();
+                    document.getElementById('musicIcon').textContent = '🔊';
+                    document.getElementById('musicLabel').textContent = t.music;
+                } else {
+                    this.audio.stopBGM();
+                    document.getElementById('musicIcon').textContent = '🔇';
+                    document.getElementById('musicLabel').textContent = t.musicOff;
+                }
             }
 
             rearrangePieces() {
@@ -1259,6 +1498,8 @@
                 const arrows = { down: '⬇️', up: '⬆️', left: '⬅️', right: '➡️' };
                 this.gravityArrowElement.textContent = arrows[this.gravityDirection];
                 
+                this.passBtn.disabled = this.gameOver || (this.mode === 'pve' && this.currentPlayer === 2);
+                
                 this.updatePlayerTurnText();
             }
 
@@ -1296,16 +1537,20 @@
                 this.currentPlayer = 1;
                 this.turnCount = 0;
                 this.gravityDirection = 'down';
+                this.nextGravityDirection = null;
                 this.gameOver = false;
                 this.lastMove = null;
                 
                 this.createBoard();
                 this.showMessage('', '');
+                this.updateGravityWarning();
                 this.updateUI();
                 
                 this.audio.stopBGM();
                 this.audio.playStart();
-                this.audio.startBGM();
+                if (this.musicOn) {
+                    this.audio.startBGM();
+                }
             }
         }
 
