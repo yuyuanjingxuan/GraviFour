@@ -417,7 +417,7 @@
     </div>
 
     <div class="info-panel">
-        <div><span id="turnLabel">当前回合</span>: <span id="turnCount">0</span></div>
+        <div><span id="turnLabel">手数</span>: <span id="turnCount">0</span></div>
         <div class="gravity-indicator">
             <span id="gravityLabel">重力方向</span>: <span id="gravityDir">向下</span> <span class="arrow" id="gravityArrow">⬇️</span>
         </div>
@@ -451,7 +451,7 @@
         </div>
 
         <div class="player-turn" id="playerTurn">
-            <span></span><span id="playerLabel">玩家 1 回合</span>
+            <span></span><span id="playerLabel">轮到玩家 1</span>
         </div>
         <button class="btn-restart" onclick="game.restart()"><span id="restartLabel">重新开始</span></button>
         <button class="btn-pass" onclick="game.passTurn()"><span id="passLabel">跳过</span></button>
@@ -462,7 +462,7 @@
 
     <div class="rules">
         <p id="rule1">🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。</p>
-        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力随机变为新方向（提前 2 回合醒目预告）！棋子会重新分布。</p>
+        <p id="rule2">🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 手重力随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。</p>
         <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
         <p id="rule4">⏱️ 每手棋限时 30 秒，超时强制换人；也可主动“跳过”。</p>
     </div>
@@ -882,7 +882,7 @@
                 this.texts = {
                     zh: {
                         title: '重力反转四子棋',
-                        turn: '当前回合',
+                        turn: '手数',
                         gravity: '重力方向',
                         gravityDown: '向下',
                         gravityUp: '向上',
@@ -892,7 +892,7 @@
                         restart: '重新开始',
                         sizeLabel: '棋盘大小',
                         rule1: '🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。',
-                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 回合重力随机变为新方向（提前 2 回合醒目预告）！棋子会重新分布。',
+                        rule2: '🔄 <strong>特殊机制：</strong>每 <span id="gravityChangeInterval">6</span> 手重力随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。',
                         rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
                         rule4: '⏱️ 每手棋限时 30 秒，超时强制换人；也可主动跳过。',
                         pass: '跳过',
@@ -900,7 +900,7 @@
                         musicOff: '已静音',
                         timerLabel: '剩余时间',
                         passMsg: '玩家 {p} 跳过',
-                        gravityWarning: '⚠️ 重力将在 {n} 回合后变为 {dir}！',
+                        gravityWarning: '⚠️ 重力将在 {n} 手后变为 {dir}！',
                         gravityWarningNow: '⚠️ 下一手棋后重力将变为 {dir}！',
                         drawBoth: '重力变化后双方都连成 4 子，和棋！🤝',
                         pvp: 'PVP',
@@ -910,9 +910,9 @@
                         medium: '中等',
                         hard: '困难',
                         expert: '专家',
-                        player1Turn: '玩家 1 回合',
-                        player2Turn: '玩家 2 回合',
-                        aiTurn: '电脑回合',
+                        player1Turn: '轮到玩家 1',
+                        player2Turn: '轮到玩家 2',
+                        aiTurn: '轮到电脑',
                         win1: '玩家 1 获胜！🎉',
                         win2: '玩家 2 获胜！🎉',
                         winAI: '电脑获胜！🤖',
@@ -925,7 +925,7 @@
                     },
                     en: {
                         title: 'Gravity Reversal Connect Four',
-                        turn: 'Turn',
+                        turn: 'Move',
                         gravity: 'Gravity',
                         gravityDown: 'Down',
                         gravityUp: 'Up',
@@ -935,15 +935,15 @@
                         restart: 'Restart',
                         sizeLabel: 'Board Size',
                         rule1: '🎯 <strong>Rules:</strong> Click the board to drop pieces. Pieces fall due to gravity. First to connect 4 (horizontal, vertical, diagonal) wins.',
-                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> turns, gravity randomly changes to a new direction (announced 2 turns in advance)! Pieces redistribute.',
+                        rule2: '🔄 <strong>Special:</strong> Every <span id="gravityChangeInterval">6</span> moves, gravity randomly changes to a new direction (announced 2 moves in advance)! Pieces redistribute.',
                         rule3: 'The drop slot is always opposite to gravity: down drops from top, up from bottom, left from the right side, right from the left side.',
-                        rule4: '⏱️ Each turn has a 30-second limit; timeout forces a switch. You can also pass.',
+                        rule4: '⏱️ Each move has a 30-second limit; timeout forces a switch. You can also pass.',
                         pass: 'Pass',
                         music: 'Music',
                         musicOff: 'Muted',
                         timerLabel: 'Time Left',
                         passMsg: 'Player {p} passed',
-                        gravityWarning: '⚠️ Gravity will change to {dir} in {n} turns!',
+                        gravityWarning: '⚠️ Gravity will change to {dir} in {n} moves!',
                         gravityWarningNow: '⚠️ Gravity will change to {dir} after the next move!',
                         drawBoth: 'Both players connected 4 after the gravity change — Draw! 🤝',
                         pvp: 'PVP',
@@ -953,9 +953,9 @@
                         medium: 'Medium',
                         hard: 'Hard',
                         expert: 'Expert',
-                        player1Turn: 'Player 1 Turn',
-                        player2Turn: 'Player 2 Turn',
-                        aiTurn: 'AI Turn',
+                        player1Turn: 'Player 1 to Move',
+                        player2Turn: 'Player 2 to Move',
+                        aiTurn: 'AI to Move',
                         win1: 'Player 1 Wins! 🎉',
                         win2: 'Player 2 Wins! 🎉',
                         winAI: 'AI Wins! 🤖',
@@ -1071,6 +1071,9 @@
                 if (!this.gameOver) {
                     this.updatePlayerTurnText();
                 }
+                this.updateGravityWarning();
+                // 重力方向指示器随语言重渲染
+                this.gravityDirElement.textContent = t[`gravity${this.gravityDirection.charAt(0).toUpperCase() + this.gravityDirection.slice(1)}`];
             }
 
             setMode(mode) {
