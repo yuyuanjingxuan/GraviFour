@@ -32,18 +32,10 @@ No installation or build tools required.
 
 ## 📝 Game Example
 
-```
-Gravity Down (Default)  After Reversal (Gravity Up)
-⬇️                      ⬆️
-┌─────┐                ┌─────┐
-│     │                │●●●│
-│●●●  │                │○○ │
-│○○   │    →Reverse→   │   │
-│     │                │   │
-│     │                │   │
-└─────┘                └─────┘
-Drop from top           Drop from bottom
-```
+| Gravity Down (Default) ⬇️ | After Reversal (Gravity Up) ⬆️ |
+|:---:|:---:|
+| Drop from top, pieces settle at bottom | Drop from bottom, pieces settle at top |
+| ![Gravity Down](images/screenshot-gravity-down.png) | ![Gravity Up](images/screenshot-gravity-up.png) |
 
 ## 📄 License
 

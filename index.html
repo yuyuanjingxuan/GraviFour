@@ -370,6 +370,7 @@
                 this.bgmOscillators = [];
                 this.bgmGain = null;
                 this.isPlayingBGM = false;
+                this.bgmIndex = 0;
             }
 
             init() {
@@ -704,7 +705,6 @@
                 this.audio = new AudioSystem();
                 this.turnStartTime = null;
                 this.turnTimer = null;
-                this.bgmIndex = 0;
                 
                 this.boardElement = document.getElementById('board');
                 this.messageElement = document.getElementById('message');
