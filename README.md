@@ -1,5 +1,6 @@
 # 🔄 重力变换四子棋
 
+[![Play Online](https://img.shields.io/badge/▶️_Play%20%20Online-GraviFour-brightgreen)](https://yuyuanjingxuan.github.io/GraviFour/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
 [![Single File](https://img.shields.io/badge/Single%20File-HTML5-blue)]()
@@ -46,6 +47,12 @@
 - 🔄 重新开始功能
 
 ## 🚀 快速开始
+
+### ▶️ 在线游玩（推荐）
+
+直接打开 [https://yuyuanjingxuan.github.io/GraviFour/](https://yuyuanjingxuan.github.io/GraviFour/) 即可开始游戏，无需安装！
+
+### 📥 本地运行
 
 直接在浏览器中打开 `index.html` 即可开始游戏！
 

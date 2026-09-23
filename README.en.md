@@ -1,5 +1,6 @@
 # 🔄 Gravity Change Connect Four
 
+[![Play Online](https://img.shields.io/badge/▶️_Play%20%20Online-GraviFour-brightgreen)](https://yuyuanjingxuan.github.io/GraviFour/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
 [![Single File](https://img.shields.io/badge/Single%20File-HTML5-blue)]()
@@ -46,6 +47,12 @@ A unique variant of Connect Four where gravity direction **randomly changes** to
 - 🔄 Restart functionality
 
 ## 🚀 Quick Start
+
+### ▶️ Play Online (Recommended)
+
+Open [https://yuyuanjingxuan.github.io/GraviFour/](https://yuyuanjingxuan.github.io/GraviFour/) to start playing — no installation needed!
+
+### 📥 Run Locally
 
 Simply open `index.html` in your browser to start playing!
 
