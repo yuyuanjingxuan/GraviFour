@@ -1,7 +1,7 @@
 # 🔄 Gravity Change Connect Four
 
 [![Play Online](https://img.shields.io/badge/▶️_Play%20%20Online-GraviFour-brightgreen)](https://yuyuanjingxuan.github.io/GraviFour/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
 [![Single File](https://img.shields.io/badge/Single%20File-HTML5-blue)]()
 [![No Build](https://img.shields.io/badge/No%20Build-Required-green)]()
@@ -67,7 +67,11 @@ No installation or build tools required.
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE) - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the [GNU AGPL-3.0 License](LICENSE) - see the [LICENSE](LICENSE) file for details.
+
+In short: anyone is free to use, modify, and distribute this code (including commercially), but **if you deploy a modified version as a network service for others to use, you must also make its complete source code available**. This prevents anyone from taking the code, tweaking it, and running it as a closed-source service.
+
+The name "GraviFour" and associated branding are **not covered by the open-source grant** and may not be used to name, market, or list other products without permission — see the notice at the end of the LICENSE file.
 
 ## 🙏 Acknowledgments
 

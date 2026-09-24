@@ -1,7 +1,7 @@
 # 🔄 重力变换四子棋
 
 [![Play Online](https://img.shields.io/badge/▶️_Play%20%20Online-GraviFour-brightgreen)](https://yuyuanjingxuan.github.io/GraviFour/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](LICENSE)
 [![CI](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml/badge.svg)](https://github.com/yuyuanjingxuan/GraviFour/actions/workflows/ci.yml)
 [![Single File](https://img.shields.io/badge/Single%20File-HTML5-blue)]()
 [![No Build](https://img.shields.io/badge/No%20Build-Required-green)]()
@@ -67,7 +67,11 @@
 
 ## 📄 许可证
 
-本项目采用 [MIT 许可证](LICENSE) - 详见 [LICENSE](LICENSE) 文件。
+本项目采用 [GNU AGPL-3.0 许可证](LICENSE) - 详见 [LICENSE](LICENSE) 文件。
+
+这意味着：任何人都可以自由使用、修改、分发本项目的代码（包括商用），但**修改后的版本如果部署为网络服务供他人使用，也必须公开其完整源代码**。这是为了防止有人拿走代码改一改就闭源上线运营。
+
+另外，"GraviFour"（重力变换四子棋）这一名称及相关标识**不包含在开源授权范围内**，未经许可不得用于其他产品的宣传、命名或商店 listing——详见 LICENSE 文件末尾的附加声明。
 
 ## 🙏 致谢
 
