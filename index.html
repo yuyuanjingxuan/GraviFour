@@ -745,7 +745,7 @@
             getBestMove(board, player, gravity) {
                 const opponent = player === 1 ? 2 : 1;
                 const depth = this.getDepth();
-                const axes = this.getValidAxes(board, gravity);
+                const axes = this.sortAxes(this.getValidAxes(board, gravity), board, gravity);
                 if (axes.length === 0) return Math.floor(board[0].length / 2);
 
                 // 立即取胜
@@ -823,6 +823,13 @@
                 return -1;
             }
 
+            sortAxes(axes, board, gravity) {
+                const horizontal = (gravity === 'left' || gravity === 'right');
+                const size = horizontal ? board.length : board[0].length;
+                const center = (size - 1) / 2;
+                return [...axes].sort((a, b) => Math.abs(a - center) - Math.abs(b - center));
+            }
+
             landingCell(board, axis, gravity) {
                 const horizontal = (gravity === 'left' || gravity === 'right');
                 if (horizontal) {
@@ -853,7 +860,8 @@
                 if (this.boardHasWin(board, humanPlayer)) return -100000 - depth;  // 偏好更慢落败
                 if (depth === 0) return this.evaluateBoard(board, aiPlayer);
 
-                const axes = this.getValidAxes(board, gravity);
+                // 走法排序：中心优先，让 alpha-beta 剪枝更早触发
+                const axes = this.sortAxes(this.getValidAxes(board, gravity), board, gravity);
                 if (axes.length === 0) return 0; // 无子可落，和棋
 
                 if (isMaximizing) {
