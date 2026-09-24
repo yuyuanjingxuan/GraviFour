@@ -1093,7 +1093,6 @@
                 if (this.musicOn) {
                     this.audio.startBGM();
                 }
-                this.startTurnTimer();
             }
 
             startTurnTimer() {
@@ -1671,7 +1670,14 @@
 
             updateUI() {
                 this.turnCountElement.textContent = this.totalMoves;
-                
+
+                // 尚未开局（总手数为 0）时不计时，显示占位符；第一手落下后才开始计时
+                if (this.totalMoves === 0) {
+                    this.stopTurnTimer();
+                    this.turnTimerElement.textContent = '—';
+                    this.turnTimerBox.classList.remove('timer-low');
+                }
+
                 this.updateGravityIndicator();
                 
                 this.passBtn.disabled = this.gameOver || (this.mode === 'pve' && this.currentPlayer === 2);
