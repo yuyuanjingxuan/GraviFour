@@ -748,11 +748,6 @@
                 const axes = this.getValidAxes(board, gravity);
                 if (axes.length === 0) return Math.floor(board[0].length / 2);
 
-                // easy：30% 概率完全随机落子
-                if (this.difficulty === 'easy' && Math.random() < 0.3) {
-                    return axes[Math.floor(Math.random() * axes.length)];
-                }
-
                 // 立即取胜
                 for (const axis of axes) {
                     const cell = this.landingCell(board, axis, gravity);
@@ -790,12 +785,13 @@
             }
 
             getDepth() {
+                // 难度表（minimax 搜索深度）：所有难度均为真实搜索，无随机落子
                 switch (this.difficulty) {
-                    case 'easy': return 2;
-                    case 'medium': return 3;
-                    case 'hard': return 4;
-                    case 'expert': return 5;
-                    default: return 3;
+                    case 'easy': return 3;
+                    case 'medium': return 4;
+                    case 'hard': return 5;
+                    case 'expert': return 6;
+                    default: return 4;
                 }
             }
 
