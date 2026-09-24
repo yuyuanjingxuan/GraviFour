@@ -736,14 +736,6 @@
         class AI {
             constructor(difficulty = 'medium') {
                 this.difficulty = difficulty;
-                this.weights = {
-                    win: 10000,
-                    blockWin: 5000,
-                    three: 1000,
-                    blockThree: 800,
-                    two: 100,
-                    center: 50
-                };
             }
 
             setDifficulty(difficulty) {
@@ -752,50 +744,49 @@
 
             getBestMove(board, player, gravity) {
                 const opponent = player === 1 ? 2 : 1;
-                const cols = board[0].length;
-                const rows = board.length;
-                const horizontal = (gravity === 'left' || gravity === 'right');
-                const axisCount = horizontal ? rows : cols;
+                const depth = this.getDepth();
+                const axes = this.getValidAxes(board, gravity);
+                if (axes.length === 0) return Math.floor(board[0].length / 2);
 
+                // easy：30% 概率完全随机落子
+                if (this.difficulty === 'easy' && Math.random() < 0.3) {
+                    return axes[Math.floor(Math.random() * axes.length)];
+                }
+
+                // 立即取胜
+                for (const axis of axes) {
+                    const cell = this.landingCell(board, axis, gravity);
+                    board[cell.row][cell.col] = player;
+                    const win = this.boardHasWin(board, player);
+                    board[cell.row][cell.col] = 0;
+                    if (win) return axis;
+                }
+
+                // 立即阻挡（防止对手下一手取胜）
+                for (const axis of axes) {
+                    const cell = this.landingCell(board, axis, gravity);
+                    board[cell.row][cell.col] = opponent;
+                    const win = this.boardHasWin(board, opponent);
+                    board[cell.row][cell.col] = 0;
+                    if (win) return axis;
+                }
+
+                // minimax + alpha-beta 搜索，深度由难度决定
                 let bestScore = -Infinity;
                 let bestMoves = [];
-
-                // 根据难度调整搜索深度
-                const depth = this.getDepth();
-
-                for (let i = 0; i < axisCount; i++) {
-                    let row, col;
-                    if (horizontal) {
-                        row = i;
-                        col = gravity === 'left' ? this.findLeft(board, row) : this.findRight(board, row);
-                    } else {
-                        col = i;
-                        row = gravity === 'up' ? this.findTop(board, col) : this.findBottom(board, col);
-                    }
-                    if (row === -1 || col === -1) continue;
-
-                    // 评估这个位置
-                    let score = this.evaluateMove(board, row, col, player, opponent, depth);
-
+                for (const axis of axes) {
+                    const cell = this.landingCell(board, axis, gravity);
+                    board[cell.row][cell.col] = player;
+                    const score = this.minimax(board, depth - 1, -Infinity, Infinity, false, player, gravity);
+                    board[cell.row][cell.col] = 0;
                     if (score > bestScore) {
                         bestScore = score;
-                        bestMoves = [i];
+                        bestMoves = [axis];
                     } else if (score === bestScore) {
-                        bestMoves.push(i);
+                        bestMoves.push(axis);
                     }
                 }
-
-                // 添加一些随机性
-                if (this.difficulty === 'easy' && Math.random() < 0.3) {
-                    const valid = this.getValidAxes(board, gravity);
-                    if (valid.length > 0) {
-                        return valid[Math.floor(Math.random() * valid.length)];
-                    }
-                }
-
-                return bestMoves.length > 0 ?
-                    bestMoves[Math.floor(Math.random() * bestMoves.length)] :
-                    Math.floor(axisCount / 2);
+                return bestMoves[Math.floor(Math.random() * bestMoves.length)];
             }
 
             getDepth() {
@@ -806,10 +797,6 @@
                     case 'expert': return 5;
                     default: return 3;
                 }
-            }
-
-            getAvailableRow(board, col) {
-                return this.findBottom(board, col);
             }
 
             findBottom(board, col) {
@@ -840,70 +827,98 @@
                 return -1;
             }
 
-            evaluateMove(board, row, col, player, opponent, depth) {
-                let score = 0;
-
-                // 中心位置偏好
-                const centerCol = Math.floor(board[0].length / 2);
-                score += Math.abs(col - centerCol) < 2 ? this.weights.center : 0;
-
-                // 模拟落子
-                board[row][col] = player;
-
-                // 检查是否获胜
-                if (this.checkWin(board, row, col, player)) {
-                    score += this.weights.win;
-                } else {
-                    // 检查是否需要阻挡对手
-                    board[row][col] = opponent;
-                    if (this.checkWin(board, row, col, opponent)) {
-                        score += this.weights.blockWin;
-                    }
-                    board[row][col] = 0;
-
-                    // 评估连子情况
-                    score += this.evaluateLines(board, row, col, player);
-                    score -= this.evaluateLines(board, row, col, opponent) * 0.8;
+            landingCell(board, axis, gravity) {
+                const horizontal = (gravity === 'left' || gravity === 'right');
+                if (horizontal) {
+                    const row = axis;
+                    const col = gravity === 'left' ? this.findLeft(board, row) : this.findRight(board, row);
+                    if (col === -1) return null;
+                    return { row, col };
                 }
-
-                // 反向模拟
-                board[row][col] = 0;
-
-                return score;
+                const col = axis;
+                const row = gravity === 'up' ? this.findTop(board, col) : this.findBottom(board, col);
+                if (row === -1) return null;
+                return { row, col };
             }
 
-            evaluateLines(board, row, col, player) {
-                let score = 0;
-                const directions = [
-                    [[0, 1], [0, -1]],  // 水平
-                    [[1, 0], [-1, 0]],  // 垂直
-                    [[1, 1], [-1, -1]], // 对角线
-                    [[1, -1], [-1, 1]]  // 反对角线
-                ];
+            boardHasWin(board, player) {
+                for (let r = 0; r < board.length; r++) {
+                    for (let c = 0; c < board[0].length; c++) {
+                        if (board[r][c] === player && this.checkWin(board, r, c, player)) return true;
+                    }
+                }
+                return false;
+            }
 
-                for (const direction of directions) {
-                    let count = 1;
-                    let emptyEnds = 0;
+            minimax(board, depth, alpha, beta, isMaximizing, aiPlayer, gravity) {
+                const humanPlayer = aiPlayer === 1 ? 2 : 1;
 
-                    for (const [dr, dc] of direction) {
-                        let r = row + dr;
-                        let c = col + dc;
-                        while (r >= 0 && r < board.length && c >= 0 && c < board[0].length && board[r][c] === player) {
-                            count++;
-                            r += dr;
-                            c += dc;
-                        }
-                        if (r >= 0 && r < board.length && c >= 0 && c < board[0].length && board[r][c] === 0) {
-                            emptyEnds++;
+                if (this.boardHasWin(board, aiPlayer)) return 100000 + depth;       // 偏好更快取胜
+                if (this.boardHasWin(board, humanPlayer)) return -100000 - depth;  // 偏好更慢落败
+                if (depth === 0) return this.evaluateBoard(board, aiPlayer);
+
+                const axes = this.getValidAxes(board, gravity);
+                if (axes.length === 0) return 0; // 无子可落，和棋
+
+                if (isMaximizing) {
+                    let best = -Infinity;
+                    for (const axis of axes) {
+                        const cell = this.landingCell(board, axis, gravity);
+                        board[cell.row][cell.col] = aiPlayer;
+                        best = Math.max(best, this.minimax(board, depth - 1, alpha, beta, false, aiPlayer, gravity));
+                        board[cell.row][cell.col] = 0;
+                        alpha = Math.max(alpha, best);
+                        if (beta <= alpha) break;
+                    }
+                    return best;
+                } else {
+                    let best = Infinity;
+                    for (const axis of axes) {
+                        const cell = this.landingCell(board, axis, gravity);
+                        board[cell.row][cell.col] = humanPlayer;
+                        best = Math.min(best, this.minimax(board, depth - 1, alpha, beta, true, aiPlayer, gravity));
+                        board[cell.row][cell.col] = 0;
+                        beta = Math.min(beta, best);
+                        if (beta <= alpha) break;
+                    }
+                    return best;
+                }
+            }
+
+            evaluateBoard(board, aiPlayer) {
+                const rows = board.length, cols = board[0].length;
+                const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
+                let aiScore = 0, humanScore = 0;
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const p = board[r][c];
+                        if (p === 0) continue;
+                        for (const [dr, dc] of directions) {
+                            // 只从连子起点计数，避免重复
+                            const pr = r - dr, pc = c - dc;
+                            if (pr >= 0 && pr < rows && pc >= 0 && pc < cols && board[pr][pc] === p) continue;
+                            let count = 0, rr = r, cc = c;
+                            while (rr >= 0 && rr < rows && cc >= 0 && cc < cols && board[rr][cc] === p) {
+                                count++;
+                                rr += dr;
+                                cc += dc;
+                            }
+                            if (count < 2) continue;
+                            let open = 0;
+                            if (pr >= 0 && pr < rows && pc >= 0 && pc < cols && board[pr][pc] === 0) open++;
+                            if (rr >= 0 && rr < rows && cc >= 0 && cc < cols && board[rr][cc] === 0) open++;
+                            let v = 0;
+                            if (count >= 4) v = 10000;
+                            else if (count === 3) v = open === 2 ? 500 : (open === 1 ? 100 : 0);
+                            else if (count === 2) v = open === 2 ? 50 : (open === 1 ? 10 : 0);
+                            if (p === aiPlayer) aiScore += v;
+                            else humanScore += v;
                         }
                     }
-
-                    if (count >= 4) score += this.weights.win;
-                    else if (count === 3 && emptyEnds > 0) score += this.weights.three;
-                    else if (count === 2 && emptyEnds > 0) score += this.weights.two;
                 }
-
-                return score;
+                // 对手威胁权重略高，使 AI 更偏防守
+                return aiScore - humanScore * 1.1;
             }
 
             checkWin(board, row, col, player) {
@@ -928,10 +943,6 @@
                     if (count >= 4) return true;
                 }
                 return false;
-            }
-
-            getValidColumns(board) {
-                return this.getValidAxes(board, 'down');
             }
 
             getValidAxes(board, gravity) {
