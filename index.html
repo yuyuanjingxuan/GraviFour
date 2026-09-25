@@ -858,7 +858,7 @@
 
                 if (this.boardHasWin(board, aiPlayer)) return 100000 + depth;       // 偏好更快取胜
                 if (this.boardHasWin(board, humanPlayer)) return -100000 - depth;  // 偏好更慢落败
-                if (depth === 0) return this.evaluateBoard(board, aiPlayer);
+                if (depth === 0) return this.evaluateBoard(board, aiPlayer, gravity);
 
                 // 走法排序：中心优先，让 alpha-beta 剪枝更早触发
                 const axes = this.sortAxes(this.getValidAxes(board, gravity), board, gravity);
@@ -889,7 +889,21 @@
                 }
             }
 
-            evaluateBoard(board, aiPlayer) {
+            countWinSpots(board, player, gravity) {
+                // 统计 player 的"一步取胜点"数量：落子后能立即连成四子的轴数
+                let count = 0;
+                const axes = this.getValidAxes(board, gravity);
+                for (const axis of axes) {
+                    const cell = this.landingCell(board, axis, gravity);
+                    if (!cell) continue;
+                    board[cell.row][cell.col] = player;
+                    if (this.checkWin(board, cell.row, cell.col, player)) count++;
+                    board[cell.row][cell.col] = 0;
+                }
+                return count;
+            }
+
+            evaluateBoard(board, aiPlayer, gravity) {
                 const rows = board.length, cols = board[0].length;
                 const directions = [[0, 1], [1, 0], [1, 1], [1, -1]];
                 let aiScore = 0, humanScore = 0;
@@ -921,8 +935,20 @@
                         }
                     }
                 }
+
+                // 双威胁（fork）检测：任一方有 ≥2 个一步取胜点即可形成强制杀招
+                // （对手只能挡一个），价值远高于普通连子；单个取胜点是直接威胁
+                const humanPlayer = aiPlayer === 1 ? 2 : 1;
+                const aiWinSpots = this.countWinSpots(board, aiPlayer, gravity);
+                const humanWinSpots = this.countWinSpots(board, humanPlayer, gravity);
+                let forkScore = 0;
+                if (aiWinSpots >= 2) forkScore += 50000;
+                else if (aiWinSpots === 1) forkScore += 1000;
+                if (humanWinSpots >= 2) forkScore -= 50000;
+                else if (humanWinSpots === 1) forkScore -= 1000;
+
                 // 对手威胁权重略高，使 AI 更偏防守
-                return aiScore - humanScore * 1.1;
+                return aiScore - humanScore * 1.1 + forkScore;
             }
 
             checkWin(board, row, col, player) {
