@@ -752,7 +752,7 @@
                 for (const axis of axes) {
                     const cell = this.landingCell(board, axis, gravity);
                     board[cell.row][cell.col] = player;
-                    const win = this.boardHasWin(board, player);
+                    const win = this.checkWin(board, cell.row, cell.col, player);
                     board[cell.row][cell.col] = 0;
                     if (win) return axis;
                 }
@@ -761,9 +761,18 @@
                 for (const axis of axes) {
                     const cell = this.landingCell(board, axis, gravity);
                     board[cell.row][cell.col] = opponent;
-                    const win = this.boardHasWin(board, opponent);
+                    const win = this.checkWin(board, cell.row, cell.col, opponent);
                     board[cell.row][cell.col] = 0;
                     if (win) return axis;
+                }
+
+                // VCF（连续威胁强制取胜）搜索：只在 hard/expert 开启。
+                // 在中残局，能否算穿"每步都强制对手唯一应对"的杀招序列，
+                // 比单纯堆 minimax 深度更能拉开真实棋力差距。
+                const vcfDepth = this.getVCFDepth();
+                if (vcfDepth > 0) {
+                    const vcfMove = this.findVCF(board, player, opponent, gravity, vcfDepth, { nodes: 0, limit: 5000 });
+                    if (vcfMove !== null) return vcfMove;
                 }
 
                 // minimax + alpha-beta 搜索，深度由难度决定
@@ -772,7 +781,7 @@
                 for (const axis of axes) {
                     const cell = this.landingCell(board, axis, gravity);
                     board[cell.row][cell.col] = player;
-                    const score = this.minimax(board, depth - 1, -Infinity, Infinity, false, player, gravity);
+                    const score = this.minimax(board, depth - 1, -Infinity, Infinity, false, player, gravity, cell, player);
                     board[cell.row][cell.col] = 0;
                     if (score > bestScore) {
                         bestScore = score;
@@ -793,6 +802,78 @@
                     case 'expert': return 6;
                     default: return 4;
                 }
+            }
+
+            getVCFDepth() {
+                // VCF 搜索的强制序列深度上限（单位：己方走法数）。
+                // easy/medium 不开启，维持现有休闲难度；expert 给足深度以体现"专家"的质变优势。
+                switch (this.difficulty) {
+                    case 'hard': return 6;
+                    case 'expert': return 12;
+                    default: return 0;
+                }
+            }
+
+            // 寻找 player 的连续威胁强制取胜（VCF）序列，返回序列第一步的 axis；找不到返回 null。
+            // 只搜索"威胁着法"（落子后能形成一步取胜点的走法），且要求对手的防守走法唯一
+            // 才继续深入——这两条强剪枝条件让搜索空间远小于全宽度 minimax，
+            // 但仍配合节点预算兜底，避免极端局面下退化成接近全宽度搜索导致卡顿。
+            findVCF(board, player, opponent, gravity, maxDepth, budget) {
+                if (maxDepth <= 0 || budget.nodes >= budget.limit) return null;
+                const axes = this.sortAxes(this.getValidAxes(board, gravity), board, gravity);
+
+                for (const axis of axes) {
+                    if (budget.nodes >= budget.limit) return null;
+                    budget.nodes++;
+
+                    const cell = this.landingCell(board, axis, gravity);
+                    board[cell.row][cell.col] = player;
+                    const wins = this.checkWin(board, cell.row, cell.col, player);
+
+                    if (wins) {
+                        board[cell.row][cell.col] = 0;
+                        return axis;
+                    }
+
+                    // 必须是威胁着法：落子后至少制造一个新的一步取胜点，否则不算强制
+                    const winSpots = this.countWinSpots(board, player, gravity);
+                    if (winSpots === 0) {
+                        board[cell.row][cell.col] = 0;
+                        continue;
+                    }
+
+                    // 对手的防守走法必须唯一（挡住唯一的取胜点），否则这一步不构成强制
+                    const defenses = this.getValidAxes(board, gravity).filter(oppAxis => {
+                        const oppCell = this.landingCell(board, oppAxis, gravity);
+                        if (!oppCell) return false;
+                        board[oppCell.row][oppCell.col] = opponent;
+                        const blocks = this.checkWin(board, oppCell.row, oppCell.col, opponent) || this.countWinSpots(board, player, gravity) < winSpots;
+                        board[oppCell.row][oppCell.col] = 0;
+                        return blocks;
+                    });
+
+                    if (defenses.length !== 1) {
+                        board[cell.row][cell.col] = 0;
+                        continue;
+                    }
+
+                    const oppAxis = defenses[0];
+                    const oppCell = this.landingCell(board, oppAxis, gravity);
+                    board[oppCell.row][oppCell.col] = opponent;
+                    if (this.checkWin(board, oppCell.row, oppCell.col, opponent)) {
+                        // 对手的强制应对反而是自己获胜，这条线对 player 无效
+                        board[oppCell.row][oppCell.col] = 0;
+                        board[cell.row][cell.col] = 0;
+                        continue;
+                    }
+
+                    const rest = this.findVCF(board, player, opponent, gravity, maxDepth - 1, budget);
+                    board[oppCell.row][oppCell.col] = 0;
+                    board[cell.row][cell.col] = 0;
+
+                    if (rest !== null) return axis;
+                }
+                return null;
             }
 
             findBottom(board, col) {
@@ -844,20 +925,14 @@
                 return { row, col };
             }
 
-            boardHasWin(board, player) {
-                for (let r = 0; r < board.length; r++) {
-                    for (let c = 0; c < board[0].length; c++) {
-                        if (board[r][c] === player && this.checkWin(board, r, c, player)) return true;
-                    }
-                }
-                return false;
-            }
-
-            minimax(board, depth, alpha, beta, isMaximizing, aiPlayer, gravity) {
+            minimax(board, depth, alpha, beta, isMaximizing, aiPlayer, gravity, lastCell, lastPlayer) {
                 const humanPlayer = aiPlayer === 1 ? 2 : 1;
 
-                if (this.boardHasWin(board, aiPlayer)) return 100000 + depth;       // 偏好更快取胜
-                if (this.boardHasWin(board, humanPlayer)) return -100000 - depth;  // 偏好更慢落败
+                // 只检查刚落子的位置是否连成四子，而不是每次全盘扫描：
+                // 这是每个搜索节点都会走的热路径，全盘扫描会随深度指数级放大开销
+                if (lastCell && this.checkWin(board, lastCell.row, lastCell.col, lastPlayer)) {
+                    return lastPlayer === aiPlayer ? 100000 + depth : -100000 - depth;
+                }
                 if (depth === 0) return this.evaluateBoard(board, aiPlayer, gravity);
 
                 // 走法排序：中心优先，让 alpha-beta 剪枝更早触发
@@ -869,7 +944,7 @@
                     for (const axis of axes) {
                         const cell = this.landingCell(board, axis, gravity);
                         board[cell.row][cell.col] = aiPlayer;
-                        best = Math.max(best, this.minimax(board, depth - 1, alpha, beta, false, aiPlayer, gravity));
+                        best = Math.max(best, this.minimax(board, depth - 1, alpha, beta, false, aiPlayer, gravity, cell, aiPlayer));
                         board[cell.row][cell.col] = 0;
                         alpha = Math.max(alpha, best);
                         if (beta <= alpha) break;
@@ -880,7 +955,7 @@
                     for (const axis of axes) {
                         const cell = this.landingCell(board, axis, gravity);
                         board[cell.row][cell.col] = humanPlayer;
-                        best = Math.min(best, this.minimax(board, depth - 1, alpha, beta, true, aiPlayer, gravity));
+                        best = Math.min(best, this.minimax(board, depth - 1, alpha, beta, true, aiPlayer, gravity, cell, humanPlayer));
                         board[cell.row][cell.col] = 0;
                         beta = Math.min(beta, best);
                         if (beta <= alpha) break;
