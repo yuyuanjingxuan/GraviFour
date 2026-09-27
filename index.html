@@ -313,36 +313,59 @@
         .win-player2 { color: #4ecdc4; }
         .draw { color: #f1c40f; }
 
-        .rules-toggle {
-            margin-top: 15px;
-            display: flex;
+        .rules-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            display: none;
+            align-items: center;
             justify-content: center;
+            z-index: 100;
+            padding: 20px;
         }
 
-        .btn-rules {
-            padding: 8px 18px;
-            font-size: 0.9rem;
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border: 1px solid rgba(255,255,255,0.4);
-            border-radius: 20px;
+        .rules-modal.show {
+            display: flex;
         }
 
-        .btn-rules:hover {
-            background: rgba(255,255,255,0.28);
-            transform: translateY(-1px);
+        .rules-box {
+            position: relative;
+            background: #fff;
+            color: #333;
+            border-radius: 12px;
+            padding: 24px 28px;
+            max-width: 520px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            animation: victoryPop 0.3s ease-out;
         }
 
-        .rules {
-            margin-top: 12px;
-            color: rgba(255,255,255,0.8);
-            font-size: 0.9rem;
-            text-align: center;
-            max-width: 600px;
-            line-height: 1.4;
+        .rules-box p {
+            margin: 10px 0;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            text-align: left;
         }
-        .rules p {
-            margin: 8px 0;
+
+        .rules-close {
+            position: absolute;
+            top: 10px;
+            right: 12px;
+            padding: 4px 10px;
+            font-size: 1rem;
+            background: #eee;
+            color: #333;
+            border-radius: 6px;
+        }
+
+        .rules-close:hover {
+            background: #ddd;
+        }
+
+        .victory-text.toast {
+            color: #fff;
+            text-shadow: 0 0 14px rgba(255, 215, 94, 0.95), 2px 2px 6px rgba(0, 0, 0, 0.9);
         }
 
         .footer {
@@ -558,6 +581,7 @@
     <div class="lang-selector">
         <button class="lang-btn active" onclick="game.setLanguage('zh')">中文</button>
         <button class="lang-btn" onclick="game.setLanguage('en')">English</button>
+        <button class="lang-btn" onclick="game.toggleRules()">📖 <span id="rulesLabel">规则</span></button>
     </div>
 
     <div class="info-panel">
@@ -632,15 +656,14 @@
 
     <div class="message" id="message"></div>
 
-    <div class="rules-toggle">
-        <button class="btn-rules" id="rulesBtn" onclick="game.toggleRules()">📖 <span id="rulesLabel">规则</span></button>
-    </div>
-
-    <div class="rules" id="rulesPanel" style="display: none;">
-        <p id="rule1">🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。</p>
-        <p id="rule2">🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。</p>
-        <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
-        <p id="rule4">⏱️ 每手棋限时 30 秒，超时强制换人；也可主动“跳过”。</p>
+    <div class="rules-modal" id="rulesModal" onclick="if (event.target === this) game.toggleRules()">
+        <div class="rules-box">
+            <button class="rules-close" onclick="game.toggleRules()">✕</button>
+            <p id="rule1">🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。</p>
+            <p id="rule2">🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。</p>
+            <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
+            <p id="rule4">⏱️ 每手棋限时 30 秒，超时强制换人；也可主动“跳过”。</p>
+        </div>
     </div>
 
     <div class="footer">© 2026 yuyuanjingxuan · <a href="https://github.com/yuyuanjingxuan/GraviFour" target="_blank" rel="noopener">GraviFour on GitHub</a></div>
@@ -1913,7 +1936,7 @@
             }
 
             // 棋盘上的临时提示（如超时），2 秒后自动关闭
-            showBoardToast(text, className = '') {
+            showBoardToast(text, className = 'toast') {
                 if (this.toastTimer) { clearTimeout(this.toastTimer); this.toastTimer = null; }
                 this.victoryTextElement.textContent = text;
                 this.victoryTextElement.className = `victory-text ${className}`.trim();
@@ -1925,8 +1948,7 @@
             }
 
             toggleRules() {
-                const panel = document.getElementById('rulesPanel');
-                panel.style.display = panel.style.display !== 'none' ? 'none' : 'block';
+                document.getElementById('rulesModal').classList.toggle('show');
             }
 
             checkDraw() {
