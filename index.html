@@ -1580,7 +1580,8 @@
                     this.audio.playWin();
                     const line = this.findWinningLine(row, col);
                     if (line) this.highlightWinningLine(line);
-                    this.showMessage(this.getWinMessage(), 'win-player' + this.currentPlayer);
+                    // 胜利信息只在棋盘覆盖层显示，下方消息栏清空
+                    this.showMessage('', '');
                     this.showVictoryOverlay(this.getWinMessage(), this.currentPlayer);
                     return;
                 }
@@ -1663,7 +1664,8 @@
                     const msg = w.p1 ? t.win1 : (this.mode === 'pve' ? t.winAI : t.win2);
                     const line = this.findWinningLineForPlayer(winner);
                     if (line) this.highlightWinningLine(line);
-                    this.showMessage(msg, 'win-player' + winner);
+                    // 胜利信息只在棋盘覆盖层显示，下方消息栏清空
+                    this.showMessage('', '');
                     this.showVictoryOverlay(msg, winner);
                 }
                 
