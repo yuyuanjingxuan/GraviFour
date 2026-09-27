@@ -313,8 +313,28 @@
         .win-player2 { color: #4ecdc4; }
         .draw { color: #f1c40f; }
 
+        .rules-toggle {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn-rules {
+            padding: 8px 18px;
+            font-size: 0.9rem;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 20px;
+        }
+
+        .btn-rules:hover {
+            background: rgba(255,255,255,0.28);
+            transform: translateY(-1px);
+        }
+
         .rules {
-            margin-top: 20px;
+            margin-top: 12px;
             color: rgba(255,255,255,0.8);
             font-size: 0.9rem;
             text-align: center;
@@ -612,7 +632,11 @@
 
     <div class="message" id="message"></div>
 
-    <div class="rules">
+    <div class="rules-toggle">
+        <button class="btn-rules" id="rulesBtn" onclick="game.toggleRules()">📖 <span id="rulesLabel">规则</span></button>
+    </div>
+
+    <div class="rules" id="rulesPanel" style="display: none;">
         <p id="rule1">🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。</p>
         <p id="rule2">🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。</p>
         <p id="rule3">投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。</p>
@@ -1152,6 +1176,7 @@
                 this.passBtn = document.querySelector('.btn-pass');
                 this.overlayElement = document.getElementById('boardOverlay');
                 this.victoryTextElement = document.getElementById('victoryText');
+                this.toastTimer = null;
                 this.ai = new AI(this.difficulty);
 
                 this.texts = {
@@ -1166,6 +1191,7 @@
                         player: '玩家',
                         restart: '重新开始',
                         sizeLabel: '棋盘大小',
+                        rules: '规则',
                         rule1: '🎯 <strong>游戏规则：</strong>点击棋盘投放棋子，棋子受重力影响自动下落，先连成 4 个同色棋子（横、竖、斜）者获胜。',
                         rule2: '🔄 <strong>特殊机制：</strong>重力会随机变为新方向（提前 2 手醒目预告）！棋子会重新分布。开局前可选固定间隔、随机间隔或固定方向（普通四子棋）。',
                         rule3: '投放口总在重力的反方向：向下从顶部投、向上从底部投、向左从右侧投、向右从左侧投。',
@@ -1216,6 +1242,7 @@
                         player: 'Player',
                         restart: 'Restart',
                         sizeLabel: 'Board Size',
+                        rules: 'Rules',
                         rule1: '🎯 <strong>Rules:</strong> Click the board to drop pieces. Pieces fall due to gravity. First to connect 4 (horizontal, vertical, diagonal) wins.',
                         rule2: '🔄 <strong>Special:</strong> Gravity randomly changes to a new direction (announced 2 moves in advance)! Pieces redistribute. Choose fixed interval, random interval, or fixed direction (classic Connect Four) before the game starts.',
                         rule3: 'The drop slot is always opposite to gravity: down drops from top, up from bottom, left from the right side, right from the left side.',
@@ -1310,7 +1337,7 @@
                 } else {
                     msgKey = this.currentPlayer === 1 ? 'player1Timeout' : 'player2Timeout';
                 }
-                this.showMessage(this.getText(msgKey), 'timeout');
+                this.showBoardToast(this.getText(msgKey));
                 this.turnCount++;
                 this.totalMoves++;
                 this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
@@ -1337,6 +1364,7 @@
                 document.getElementById('turnLabel').textContent = t.turn;
                 document.getElementById('restartLabel').textContent = t.restart;
                 document.getElementById('sizeLabel').textContent = t.sizeLabel;
+                document.getElementById('rulesLabel').textContent = t.rules;
                 document.getElementById('rule1').innerHTML = t.rule1;
                 document.getElementById('rule2').innerHTML = t.rule2;
                 document.getElementById('rule3').textContent = t.rule3;
@@ -1873,13 +1901,32 @@
             }
 
             showVictoryOverlay(text, player) {
+                if (this.toastTimer) { clearTimeout(this.toastTimer); this.toastTimer = null; }
                 this.victoryTextElement.textContent = text;
                 this.victoryTextElement.className = `victory-text win-player${player}`;
                 this.overlayElement.classList.add('show');
             }
 
             hideVictoryOverlay() {
+                if (this.toastTimer) { clearTimeout(this.toastTimer); this.toastTimer = null; }
                 this.overlayElement.classList.remove('show');
+            }
+
+            // 棋盘上的临时提示（如超时），2 秒后自动关闭
+            showBoardToast(text, className = '') {
+                if (this.toastTimer) { clearTimeout(this.toastTimer); this.toastTimer = null; }
+                this.victoryTextElement.textContent = text;
+                this.victoryTextElement.className = `victory-text ${className}`.trim();
+                this.overlayElement.classList.add('show');
+                this.toastTimer = setTimeout(() => {
+                    this.overlayElement.classList.remove('show');
+                    this.toastTimer = null;
+                }, 2000);
+            }
+
+            toggleRules() {
+                const panel = document.getElementById('rulesPanel');
+                panel.style.display = panel.style.display !== 'none' ? 'none' : 'block';
             }
 
             checkDraw() {
