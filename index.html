@@ -189,6 +189,50 @@
             50% { opacity: 0.7; transform: scale(1.2); }
         }
 
+        .cell.winning {
+            animation: winGlow 0.7s ease-in-out infinite alternate;
+            z-index: 1;
+        }
+
+        @keyframes winGlow {
+            from { box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.7); transform: scale(1); }
+            to { box-shadow: 0 0 20px 8px rgba(255, 215, 94, 0.95); transform: scale(1.1); }
+        }
+
+        .game-container {
+            position: relative;
+        }
+
+        .board-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 15px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .board-overlay.show {
+            display: flex;
+        }
+
+        .victory-text {
+            font-size: 2.4rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 0 10px;
+            text-shadow: 0 0 20px rgba(255, 215, 94, 0.8), 2px 2px 4px rgba(0, 0, 0, 0.6);
+            animation: victoryPop 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+
+        @keyframes victoryPop {
+            0% { transform: scale(0.2) rotate(-8deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
         .controls {
             margin-top: 20px;
             display: flex;
@@ -508,6 +552,9 @@
 
     <div class="game-container">
         <div class="board" id="board"></div>
+        <div class="board-overlay" id="boardOverlay">
+            <div class="victory-text" id="victoryText"></div>
+        </div>
     </div>
 
     <div class="controls">
@@ -1103,6 +1150,8 @@
                 this.turnTimerBox = document.getElementById('turnTimerBox');
                 this.gravityWarningElement = document.getElementById('gravityWarning');
                 this.passBtn = document.querySelector('.btn-pass');
+                this.overlayElement = document.getElementById('boardOverlay');
+                this.victoryTextElement = document.getElementById('victoryText');
                 this.ai = new AI(this.difficulty);
 
                 this.texts = {
@@ -1529,7 +1578,10 @@
                     this.gameOver = true;
                     this.audio.stopBGM();
                     this.audio.playWin();
+                    const line = this.findWinningLine(row, col);
+                    if (line) this.highlightWinningLine(line);
                     this.showMessage(this.getWinMessage(), 'win-player' + this.currentPlayer);
+                    this.showVictoryOverlay(this.getWinMessage(), this.currentPlayer);
                     return;
                 }
 
@@ -1606,9 +1658,13 @@
                     this.gameOver = true;
                     this.audio.stopBGM();
                     this.audio.playWin();
+                    const winner = w.p1 ? 1 : 2;
                     const t = this.texts[this.language];
                     const msg = w.p1 ? t.win1 : (this.mode === 'pve' ? t.winAI : t.win2);
-                    this.showMessage(msg, 'win-player' + (w.p1 ? 1 : 2));
+                    const line = this.findWinningLineForPlayer(winner);
+                    if (line) this.highlightWinningLine(line);
+                    this.showMessage(msg, 'win-player' + winner);
+                    this.showVictoryOverlay(msg, winner);
                 }
                 
                 // 重置回合计数器（仅非固定方向模式）
@@ -1770,6 +1826,60 @@
                 return false;
             }
 
+            findWinningLine(row, col) {
+                const player = this.board[row][col];
+                const directions = [
+                    [[0, 1], [0, -1]],
+                    [[1, 0], [-1, 0]],
+                    [[1, 1], [-1, -1]],
+                    [[1, -1], [-1, 1]]
+                ];
+
+                for (const direction of directions) {
+                    const cells = [{ row, col }];
+                    for (const [dr, dc] of direction) {
+                        let r = row + dr;
+                        let c = col + dc;
+                        while (r >= 0 && r < this.rows && c >= 0 && c < this.cols && this.board[r][c] === player) {
+                            cells.push({ row: r, col: c });
+                            r += dr;
+                            c += dc;
+                        }
+                    }
+                    if (cells.length >= 4) return cells;
+                }
+                return null;
+            }
+
+            findWinningLineForPlayer(player) {
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        if (this.board[r][c] === player) {
+                            const line = this.findWinningLine(r, c);
+                            if (line) return line;
+                        }
+                    }
+                }
+                return null;
+            }
+
+            highlightWinningLine(cells) {
+                for (const { row, col } of cells) {
+                    const index = row * this.cols + col;
+                    this.boardElement.children[index].classList.add('winning');
+                }
+            }
+
+            showVictoryOverlay(text, player) {
+                this.victoryTextElement.textContent = text;
+                this.victoryTextElement.className = `victory-text win-player${player}`;
+                this.overlayElement.classList.add('show');
+            }
+
+            hideVictoryOverlay() {
+                this.overlayElement.classList.remove('show');
+            }
+
             checkDraw() {
                 return this.board.every(row => row.every(cell => cell !== 0));
             }
@@ -1858,6 +1968,7 @@
                 this.gameStarted = false;
                 this.lastMove = null;
                 
+                this.hideVictoryOverlay();
                 this.createBoard();
                 this.showMessage('', '');
                 this.updateGravityWarning();
