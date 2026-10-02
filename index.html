@@ -836,11 +836,12 @@
                 this.difficulty = difficulty;
             }
 
-            getBestMove(board, player, gravity) {
+            getBestMove(board, player, gravity, gravityState = null) {
                 const opponent = player === 1 ? 2 : 1;
                 const depth = this.getDepth();
                 const axes = this.sortAxes(this.getValidAxes(board, gravity), board, gravity);
                 if (axes.length === 0) return Math.floor(board[0].length / 2);
+                const forecastActive = Boolean(gravityState?.nextDirection);
 
                 // 立即取胜
                 for (const axis of axes) {
@@ -851,20 +852,23 @@
                     if (win) return axis;
                 }
 
-                // 立即阻挡（防止对手下一手取胜）
-                for (const axis of axes) {
-                    const cell = this.landingCell(board, axis, gravity);
-                    board[cell.row][cell.col] = opponent;
-                    const win = this.checkWin(board, cell.row, cell.col, opponent);
-                    board[cell.row][cell.col] = 0;
-                    if (win) return axis;
+                // 未临近已预告的变向时，可直接阻挡对手下一手取胜。
+                // 变向倒计时内改由完整搜索判断，避免忽略落子后触发的棋子重排。
+                if (!forecastActive) {
+                    for (const axis of axes) {
+                        const cell = this.landingCell(board, axis, gravity);
+                        board[cell.row][cell.col] = opponent;
+                        const win = this.checkWin(board, cell.row, cell.col, opponent);
+                        board[cell.row][cell.col] = 0;
+                        if (win) return axis;
+                    }
                 }
 
                 // VCF（连续威胁强制取胜）搜索：只在 hard/expert 开启。
                 // 在中残局，能否算穿"每步都强制对手唯一应对"的杀招序列，
                 // 比单纯堆 minimax 深度更能拉开真实棋力差距。
                 const vcfDepth = this.getVCFDepth();
-                if (vcfDepth > 0) {
+                if (vcfDepth > 0 && !forecastActive) {
                     const vcfMove = this.findVCF(board, player, opponent, gravity, vcfDepth, { nodes: 0, limit: 5000 });
                     if (vcfMove !== null) return vcfMove;
                 }
@@ -875,7 +879,16 @@
                 for (const axis of axes) {
                     const cell = this.landingCell(board, axis, gravity);
                     board[cell.row][cell.col] = player;
-                    const score = this.minimax(board, depth - 1, -Infinity, Infinity, false, player, gravity, cell, player);
+                    const result = this.advanceGravityState(board, gravity, gravityState);
+                    let score;
+                    if (result.outcome !== null) {
+                        score = this.outcomeScore(result.outcome, player, depth);
+                    } else {
+                        score = this.minimax(
+                            result.board, depth - 1, -Infinity, Infinity, false, player,
+                            result.gravity, result.gravityState, result.changed ? null : cell, player
+                        );
+                    }
                     board[cell.row][cell.col] = 0;
                     if (score > bestScore) {
                         bestScore = score;
@@ -1019,7 +1032,7 @@
                 return { row, col };
             }
 
-            minimax(board, depth, alpha, beta, isMaximizing, aiPlayer, gravity, lastCell, lastPlayer) {
+            minimax(board, depth, alpha, beta, isMaximizing, aiPlayer, gravity, gravityState, lastCell, lastPlayer) {
                 const humanPlayer = aiPlayer === 1 ? 2 : 1;
 
                 // 只检查刚落子的位置是否连成四子，而不是每次全盘扫描：
@@ -1038,7 +1051,14 @@
                     for (const axis of axes) {
                         const cell = this.landingCell(board, axis, gravity);
                         board[cell.row][cell.col] = aiPlayer;
-                        best = Math.max(best, this.minimax(board, depth - 1, alpha, beta, false, aiPlayer, gravity, cell, aiPlayer));
+                        const result = this.advanceGravityState(board, gravity, gravityState);
+                        const score = result.outcome !== null
+                            ? this.outcomeScore(result.outcome, aiPlayer, depth)
+                            : this.minimax(
+                                result.board, depth - 1, alpha, beta, false, aiPlayer,
+                                result.gravity, result.gravityState, result.changed ? null : cell, aiPlayer
+                            );
+                        best = Math.max(best, score);
                         board[cell.row][cell.col] = 0;
                         alpha = Math.max(alpha, best);
                         if (beta <= alpha) break;
@@ -1049,13 +1069,91 @@
                     for (const axis of axes) {
                         const cell = this.landingCell(board, axis, gravity);
                         board[cell.row][cell.col] = humanPlayer;
-                        best = Math.min(best, this.minimax(board, depth - 1, alpha, beta, true, aiPlayer, gravity, cell, humanPlayer));
+                        const result = this.advanceGravityState(board, gravity, gravityState);
+                        const score = result.outcome !== null
+                            ? this.outcomeScore(result.outcome, aiPlayer, depth)
+                            : this.minimax(
+                                result.board, depth - 1, alpha, beta, true, aiPlayer,
+                                result.gravity, result.gravityState, result.changed ? null : cell, humanPlayer
+                            );
+                        best = Math.min(best, score);
                         board[cell.row][cell.col] = 0;
                         beta = Math.min(beta, best);
                         if (beta <= alpha) break;
                     }
                     return best;
                 }
+            }
+
+            // 仅在方向已预告时模拟一次确定性的重力变换；下一次随机方向尚未知，停止预测。
+            advanceGravityState(board, gravity, gravityState) {
+                if (!gravityState?.nextDirection) {
+                    return { board, gravity, gravityState, changed: false, outcome: null };
+                }
+
+                const nextTurnCount = gravityState.turnCount + 1;
+                if (nextTurnCount < gravityState.interval) {
+                    return {
+                        board,
+                        gravity,
+                        gravityState: { ...gravityState, turnCount: nextTurnCount },
+                        changed: false,
+                        outcome: null
+                    };
+                }
+
+                const nextGravity = gravityState.nextDirection;
+                const nextBoard = this.rearrangeBoard(board, nextGravity);
+                return {
+                    board: nextBoard,
+                    gravity: nextGravity,
+                    gravityState: null,
+                    changed: true,
+                    outcome: this.getBoardOutcome(nextBoard)
+                };
+            }
+
+            rearrangeBoard(board, gravity) {
+                const rows = board.length;
+                const cols = board[0].length;
+                const nextBoard = Array.from({ length: rows }, () => Array(cols).fill(0));
+                const vertical = gravity === 'down' || gravity === 'up';
+
+                if (vertical) {
+                    for (let c = 0; c < cols; c++) {
+                        const pieces = [];
+                        for (let r = 0; r < rows; r++) if (board[r][c] !== 0) pieces.push(board[r][c]);
+                        let row = gravity === 'down' ? rows - pieces.length : 0;
+                        for (const piece of pieces) nextBoard[row++][c] = piece;
+                    }
+                } else {
+                    for (let r = 0; r < rows; r++) {
+                        const pieces = [];
+                        for (let c = 0; c < cols; c++) if (board[r][c] !== 0) pieces.push(board[r][c]);
+                        let col = gravity === 'right' ? cols - pieces.length : 0;
+                        for (const piece of pieces) nextBoard[r][col++] = piece;
+                    }
+                }
+                return nextBoard;
+            }
+
+            getBoardOutcome(board) {
+                let p1 = false, p2 = false;
+                for (let r = 0; r < board.length; r++) {
+                    for (let c = 0; c < board[0].length; c++) {
+                        if (board[r][c] === 1 && this.checkWin(board, r, c, 1)) p1 = true;
+                        if (board[r][c] === 2 && this.checkWin(board, r, c, 2)) p2 = true;
+                    }
+                }
+                if (p1 && p2) return 0;
+                if (p1) return 1;
+                if (p2) return 2;
+                return null;
+            }
+
+            outcomeScore(outcome, aiPlayer, depth) {
+                if (outcome === 0) return 0;
+                return outcome === aiPlayer ? 100000 + depth : -100000 - depth;
             }
 
             countWinSpots(board, player, gravity) {
@@ -1663,7 +1761,14 @@
             }
 
             aiMove() {
-                const axis = this.ai.getBestMove(this.board, 2, this.gravityDirection);
+                const gravityState = this.nextGravityDirection
+                    ? {
+                        turnCount: this.turnCount,
+                        interval: this.gravityMode === 'random' ? this.nextGravityInterval : this.gravityChangeInterval,
+                        nextDirection: this.nextGravityDirection
+                    }
+                    : null;
+                const axis = this.ai.getBestMove(this.board, 2, this.gravityDirection, gravityState);
                 const horizontal = (this.gravityDirection === 'left' || this.gravityDirection === 'right');
 
                 let targetRow, targetCol;
@@ -1800,57 +1905,7 @@
             }
 
             rearrangePieces() {
-                const newBoard = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
-                
-                if (this.gravityDirection === 'down' || this.gravityDirection === 'up') {
-                    // 垂直重力
-                    for (let c = 0; c < this.cols; c++) {
-                        const pieces = [];
-                        for (let r = 0; r < this.rows; r++) {
-                            if (this.board[r][c] !== 0) {
-                                pieces.push(this.board[r][c]);
-                            }
-                        }
-                        
-                        if (this.gravityDirection === 'down') {
-                            let newRow = this.rows - pieces.length;
-                            for (let piece of pieces) {
-                                newBoard[newRow++][c] = piece;
-                            }
-                        } else {
-                            let newRow = 0;
-                            for (let piece of pieces) {
-                                newBoard[newRow++][c] = piece;
-                            }
-                        }
-                    }
-                } else {
-                    // 水平重力
-                    for (let r = 0; r < this.rows; r++) {
-                        const pieces = [];
-                        for (let c = 0; c < this.cols; c++) {
-                            if (this.board[r][c] !== 0) {
-                                pieces.push(this.board[r][c]);
-                            }
-                        }
-                        
-                        if (this.gravityDirection === 'left') {
-                            // 重力向左：棋子靠左侧
-                            let newCol = 0;
-                            for (let piece of pieces) {
-                                newBoard[r][newCol++] = piece;
-                            }
-                        } else {
-                            // 重力向右：棋子靠右侧
-                            let newCol = this.cols - pieces.length;
-                            for (let piece of pieces) {
-                                newBoard[r][newCol++] = piece;
-                            }
-                        }
-                    }
-                }
-                
-                this.board = newBoard;
+                this.board = this.ai.rearrangeBoard(this.board, this.gravityDirection);
                 this.renderBoard();
             }
 
